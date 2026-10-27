@@ -12,6 +12,7 @@ No build step and no dependencies beyond Node (for the tools).
 
 | Do this | Command |
 |---|---|
+| Play the prototype | Open `play.html` in a browser |
 | View the map, tile set and checks | Open `index.html` in a browser |
 | Run the art checks (also runs in CI) | `node tools/check.js` |
 | Re-export the PNGs after changing art | `node tools/export.js` |
@@ -22,6 +23,8 @@ No build step and no dependencies beyond Node (for the tools).
 index.html              Tile viewer: world map with hover tooltips, the tile set, the five-tile isle, the checks
 src/tiles.js            The tile engine: grid, palette, every sprite, every tile layout, maps, checks
 src/viewer.js           Viewer page logic
+play.html               Prototype 1: chop, hire, haul, upkeep, tech and seasons on the Verdant Reach map
+src/game.js             Prototype game logic
 art/tiles/*.png         One PNG per terrain, 32x48 at 1x
 art/tilesheet.png/json  All terrains in one strip, with the order and cell metrics
 art/maps/*.png          The composed maps at 1x

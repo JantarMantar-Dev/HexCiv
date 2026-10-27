@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HexCiv Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: the map is the game, so it takes the left and the ledger (gold, season, contract, crew, tech) stacks on the
+   right; on phones the ledger drops below the map. One dark look, the same night frame as the tile viewer. */
+:root {
+  color-scheme: dark;
+  --bg: #0e1218; --panel: #161c25; --panel2: #1c2430; --line: #2a3442; --fg: #e9eef0; --muted: #98a6b3;
+  --gold: #e6c35a; --lime: #c9e05a; --teal: #55a58a; --rose: #e27a96; --ice: #a9d5f0;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+html, body { background: var(--bg); color: var(--fg); }
+body { margin: 0; font-family: var(--body); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 16px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 16px; align-items: start; }
+.wrap > * { min-width: 0; }
+header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 32px; line-height: 1; margin: 0; color: var(--lime); }
+header p { margin: 0; color: var(--muted); }
+.stage { position: relative; background: #12161d; border: 1px solid var(--line); padding: 8px; overflow: hidden; }
+.stage canvas { display: block; margin: 0 auto; max-width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; cursor: pointer; touch-action: manipulation; }
+.hint { margin: 8px 0 0; padding: 8px 10px; background: var(--panel2); border-left: 3px solid var(--lime); font-size: 14px; }
+.tip { position: absolute; pointer-events: none; background: rgba(18, 22, 29, 0.95); border: 1px solid #3a4656; padding: 7px 9px; font-size: 13px; line-height: 1.35; min-width: 140px; display: none; }
+.tip b { font-family: var(--display); font-weight: 500; font-size: 16px; display: block; color: var(--lime); }
+.tip span { color: var(--muted); font-family: var(--mono); font-size: 12px; display: block; }
+aside { display: grid; gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; display: grid; gap: 8px; }
+.card h2 { font-family: var(--display); font-weight: 500; font-size: 18px; margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.card h2 small { font-family: var(--mono); font-size: 12px; color: var(--muted); font-weight: 500; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--panel2); padding: 6px 8px; }
+.stat b { display: block; font-family: var(--mono); font-size: 18px; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.stat.gold b { color: var(--gold); }
+.bar { height: 6px; background: var(--panel2); position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--teal); }
+.season { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.season b { color: var(--fg); font-family: var(--display); font-weight: 500; font-size: 16px; }
+.contract p { margin: 0; }
+.contract .meta { color: var(--muted); font-size: 13px; }
+.pill { font-family: var(--mono); font-size: 11px; padding: 1px 6px; border: 1px solid currentColor; text-transform: uppercase; letter-spacing: .06em; }
+.pill.late { color: var(--rose); } .pill.done { color: var(--lime); } .pill.open { color: var(--ice); }
+button { font: inherit; color: var(--fg); background: var(--panel2); border: 1px solid #3a4656; padding: 8px 10px; cursor: pointer; text-align: left; }
+button:hover:not(:disabled) { border-color: var(--lime); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.hire { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.hire .cost, .tech .cost { font-family: var(--mono); color: var(--gold); white-space: nowrap; }
+.techs { display: grid; gap: 6px; }
+.tech { display: grid; gap: 2px; }
+.tech .row { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; }
+.tech small { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.tech.owned { border-color: var(--teal); }
+.tech.owned .cost { color: var(--teal); }
+.muted { color: var(--muted); font-size: 13px; margin: 0; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 13px; color: var(--muted); }
+.log li:first-child { color: var(--fg); }
+.controls { display: flex; gap: 6px; flex-wrap: wrap; }
+.controls button { padding: 5px 10px; font-family: var(--mono); font-size: 12px; }
+.controls button[aria-pressed="true"] { border-color: var(--lime); color: var(--lime); }
+@media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>HexCiv</h1>
+    <p>Prototype 1: chop, hire, haul, and fill the dock's contract before winter.</p>
+  </header>
+
+  <section>
+    <div class="stage" id="stage"><canvas id="map" aria-label="Verdant Reach map. Click a tree tile to chop."></canvas><div class="tip" id="tip"></div></div>
+    <p class="hint" id="hint"></p>
+  </section>
+
+  <aside>
+    <div class="card">
+      <div class="season"><b id="season">Spring</b><span id="year">Year 1</span></div>
+      <div class="bar" aria-hidden="true"><i id="seasonBar"></i></div>
+      <div class="stats">
+        <div class="stat gold"><b id="gold">0</b><span>Gold</span></div>
+        <div class="stat"><b id="logs">0</b><span>Logs sold</span></div>
+        <div class="stat"><b id="planks">0</b><span>Planks</span></div>
+      </div>
+      <div class="controls" role="group" aria-label="Game speed">
+        <button id="sp0" data-speed="0">Pause</button>
+        <button id="sp1" data-speed="1" aria-pressed="true">1×</button>
+        <button id="sp2" data-speed="2">2×</button>
+        <button id="sp4" data-speed="4">4×</button>
+        <button id="restart">Restart</button>
+      </div>
+    </div>
+
+    <div class="card contract" id="contract"></div>
+
+    <div class="card">
+      <h2>Crew <small id="crew">0 workers</small></h2>
+      <button class="hire" id="hire"><span>Hire a worker</span><span class="cost" id="hireCost"></span></button>
+      <p class="muted" id="upkeep"></p>
+    </div>
+
+    <div class="card">
+      <h2>Tech</h2>
+      <div class="techs" id="techs"></div>
+    </div>
+
+    <div class="card">
+      <h2>Valley log</h2>
+      <ul class="log" id="log"></ul>
+    </div>
+  </aside>
+</div>
+<script src="src/tiles.js"></script>
+<script src="src/game.js"></script>
+</body>
+</html>
