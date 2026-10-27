@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HexCiv Tiles</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+/* Layout: a game-map viewer first (map with a floating tooltip, style tabs and a side panel), then the tile set,
+   the five-tile isle, and the checks. One committed look: the dark strategy-game chrome from the reference screenshot,
+   so both tile styles sit on the same neutral night frame. */
+:root {
+  color-scheme: dark;
+  --bg: #0e1218; --panel: #161c25; --panel2: #1c2430; --line: #2a3442; --fg: #e9eef0; --muted: #98a6b3;
+  --teal: #55a58a; --lime: #c9e05a; --rose: #e27a96;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+html, body { height: auto; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 20px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+.wrap > * { min-width: 0; }
+header { display: grid; gap: 6px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 5.5vw, 44px); line-height: 1; margin: 0; color: var(--lime); text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 500; font-size: 24px; margin: 0 0 4px; }
+header p, .lede { margin: 0; color: var(--muted); max-width: 72ch; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: start; }
+.stage { position: relative; background: #12161d; border: 1px solid var(--line); padding: 10px; overflow: hidden; }
+.stage canvas { display: block; margin: 0 auto; max-width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; cursor: crosshair; }
+.tip { position: absolute; pointer-events: none; background: rgba(18, 22, 29, 0.94); border: 1px solid #3a4656; padding: 8px 10px; font-size: 13px; line-height: 1.35; min-width: 150px; display: none; box-shadow: 0 4px 0 rgba(0,0,0,.35); }
+.tip b { font-family: var(--display); font-weight: 500; font-size: 16px; display: block; color: var(--lime); }
+.tip span { color: var(--muted); font-family: var(--mono); font-size: 12px; display: block; }
+.side { background: var(--panel); border: 1px solid var(--line); padding: 14px 16px; display: grid; gap: 10px; font-size: 14px; }
+.side h3 { font-family: var(--display); font-weight: 500; font-size: 18px; margin: 0; }
+.side p { margin: 0; color: var(--muted); }
+.side .sel { font-family: var(--mono); font-size: 13px; background: var(--panel2); padding: 8px 10px; border-left: 3px solid var(--lime); }
+.sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 12px; list-style: none; margin: 0; padding: 0; }
+.sheet li { background: var(--panel); border: 1px solid var(--line); padding: 10px; display: grid; gap: 8px; }
+.pair { display: grid; justify-items: center; background: #12161d; padding: 8px; }
+.pair canvas { max-width: 128px; }
+.pair canvas { width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; }
+.sheet b { font-family: var(--display); font-weight: 500; font-size: 17px; }
+.sheet small { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+.isle { display: grid; grid-template-columns: minmax(0, 460px); gap: 12px; }
+.isle figure { margin: 0; background: var(--panel); border: 1px solid var(--line); padding: 12px; display: grid; gap: 8px; }
+.isle canvas { width: 100%; max-width: 420px; margin: 0 auto; height: auto; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+.isle figcaption { color: var(--muted); font-size: 13px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--display); font-weight: 500; color: var(--muted); }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.ok { color: var(--lime); font-family: var(--mono); }
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.rules div { background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; }
+.rules h3 { font-family: var(--display); font-weight: 500; font-size: 18px; margin: 0 0 6px; }
+.rules ul { margin: 0; padding-left: 18px; color: var(--muted); }
+footer { color: var(--muted); font-size: 13px; max-width: 80ch; }
+@media (max-width: 820px) { .viewer { grid-template-columns: 1fr; } .isle { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>HexCiv</h1>
+    <p>The HexCiv bright tile set: flat-top 32×28 hexes that tile with no gaps, colored borders, and sprites drawn pixel by pixel, built to the standard of The Clover Patch's Fantasy Hex Tiles. Hover a tile to read it.</p>
+  </header>
+
+  <section aria-labelledby="map-h">
+    <h2 id="map-h">Map</h2>
+    <div class="viewer" style="margin-top:12px">
+      <div class="stage" id="stage"><canvas id="map" aria-label="Hex map"></canvas><div class="tip" id="tip"></div></div>
+      <aside class="side" id="side">
+        <h3 id="side-h"></h3>
+        <p id="side-p"></p>
+        <div class="sel" id="sel"></div>
+      </aside>
+    </div>
+  </section>
+
+  <section aria-labelledby="set-h">
+    <h2 id="set-h">The tile set</h2>
+    <p class="lede">Fifteen terrains, from frozen peaks to desert, swamp and coast, shown at 4×.</p>
+    <ul class="sheet" id="sheet" style="margin-top:12px"></ul>
+  </section>
+
+  <section aria-labelledby="isle-h">
+    <h2 id="isle-h">Verdant Isle, retiled</h2>
+    <p class="lede">The first five hexes of the project (Grove, Pines, Rocks, Pond, Meadow) on the HexCiv grid.</p>
+    <div class="isle" id="isle" style="margin-top:12px"></div>
+  </section>
+
+  <section aria-labelledby="rules-h">
+    <h2 id="rules-h">How the tiles are made</h2>
+    <div class="rules">
+      <div><h3>Grid</h3><ul>
+        <li>Flat-top hex, 32 px wide and 28 px tall, side 16.</li>
+        <li>Columns step 24 px, odd columns sit 14 px lower (Tiled: stagger X).</li>
+        <li>Each tile is a 32×48 cell. Trees may rise 16 px above the face, and a 3 px soil band shows on the open edges.</li>
+        <li>Tiles draw top to bottom, so a tree always overlaps the tile behind it.</li>
+      </ul></div>
+      <div><h3>Bright tiles</h3><ul>
+        <li>One light from the upper left on every sprite and every border.</li>
+        <li>Each tile has a dark outer line, a light bevel on its upper-left edges and a shade line on its lower-right edges.</li>
+        <li>Sprites are drawn by hand and outlined selectively: darker on the bottom and right, softer on the top and left.</li>
+        <li>Neighbouring tiles of the same terrain alternate a mirrored layout, so a field never repeats.</li>
+        <li>River tiles open the edges their neighbours need, so one river runs unbroken from the peaks to the lake. Beaches flood only the edges that face water.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="chk-h">
+    <h2 id="chk-h">Checks</h2>
+    <p class="lede" id="chk-p"></p>
+    <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Tile</th><th>Sprites</th><th>Lone pixels</th><th>Closest sprite to the edge</th><th>Spill past the side</th><th>Move</th><th>Defense</th></tr></thead><tbody id="chk"></tbody></table></div>
+  </section>
+
+  <footer>Format and grid follow The Clover Patch's Fantasy Hex Tiles (CC-BY 4.0). No art from that pack is copied: every sprite here is drawn new in the Verdant 16 palette, plus short ramps for sand, snow and swamp. Style guide: docs/art-style.md.</footer>
+</div>
+
+<script src="src/tiles.js"></script>
+<script src="src/viewer.js"></script>
+</body>
+</html>

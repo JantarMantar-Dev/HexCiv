@@ -1,0 +1,1280 @@
+<title>Grove Redraw Study</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+/* Layout: a design review. Audit of the old drawing first, then six candidate styles scored on one checklist,
+   then the pick with its rules. Single committed look: deep teal desk, sky-blue art boards, lime for pass, rose for fail. */
+:root {
+  color-scheme: dark;
+  --bg: #11222e; --panel: #1a3445; --line: #2a4a5a; --fg: #f4f6ea; --muted: #a3b5c4; --board: #a9d5f0;
+  --pass: #9bcb3e; --part: #e6e773; --fail: #e8587d;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+html, body { height: auto; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1140px; margin: 0 auto; padding-block: 22px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 30px; }
+.wrap > * { min-width: 0; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 5.5vw, 44px); line-height: 1; margin: 0; color: var(--pass); text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 500; font-size: 24px; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 500; font-size: 18px; margin: 0; }
+header { display: grid; gap: 8px; }
+header p, section > p { margin: 0; color: var(--muted); max-width: 70ch; }
+section { display: grid; gap: 14px; }
+.board { background: var(--board); line-height: 0; }
+.board canvas { width: 100%; height: auto; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+.audit { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.issues { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: n; }
+.issues li { background: var(--panel); border-left: 3px solid var(--fail); padding: 8px 12px; counter-increment: n; display: grid; gap: 2px; }
+.issues li strong::before { content: counter(n) ". "; color: var(--fail); font-family: var(--mono); }
+.issues li span { color: var(--muted); font-size: 14px; }
+.big-num { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.big-num b { font-family: var(--display); font-size: 26px; color: var(--fail); font-weight: 700; margin-right: 6px; }
+.styles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.styles li { background: var(--panel); border: 1px solid var(--line); display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+.styles li.pick { border-color: var(--pass); box-shadow: 0 0 0 2px var(--pass); }
+.styles .body { padding: 12px 14px 14px; display: grid; gap: 8px; align-content: start; }
+.styles .tag { font-family: var(--mono); font-size: 11px; color: var(--bg); background: var(--muted); padding: 1px 6px; justify-self: start; }
+.styles .pick .tag { background: var(--pass); }
+.styles p { margin: 0; color: var(--muted); font-size: 14px; }
+.checks { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.checks li { display: grid; grid-template-columns: 62px 1fr; gap: 8px; background: none; border: 0; }
+.v { font-family: var(--mono); font-size: 11px; text-align: center; color: var(--bg); padding: 1px 0; align-self: start; }
+.v.pass { background: var(--pass); } .v.part { background: var(--part); } .v.fail { background: var(--fail); }
+.checks small { color: var(--muted); }
+.metrics { display: flex; flex-wrap: wrap; gap: 6px; }
+.metrics span { font-family: var(--mono); font-size: 11px; background: var(--bg); color: var(--fg); padding: 2px 6px; font-variant-numeric: tabular-nums; }
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.compare figure { margin: 0; display: grid; gap: 6px; }
+.compare figcaption { font-family: var(--display); font-size: 15px; color: var(--muted); }
+.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rules li { background: var(--panel); padding: 10px 14px; display: grid; gap: 2px; border-left: 3px solid var(--pass); }
+.rules strong { font-size: 14px; }
+.rules span { color: var(--muted); font-size: 14px; }
+footer { color: var(--muted); font-size: 13px; }
+@media (max-width: 900px) { .styles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .audit, .compare, .rules { grid-template-columns: 1fr; } .styles { grid-template-columns: 1fr; } .audit .board { max-width: 300px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Grove Redraw Study</h1>
+    <p>The Grove tile redrawn from scratch in six different drawing techniques, not palette swaps. Each one is scored on the same checklist, and the winner's rules are written down so every other tile can follow them.</p>
+  </header>
+
+  <section>
+    <h2>What was wrong with the current Grove</h2>
+    <div class="audit">
+      <div><div class="board"><canvas id="old" aria-label="The current Grove tile"></canvas></div><p class="big-num"><b id="oldStray">0</b>stray single pixels</p></div>
+      <ol class="issues">
+        <li><strong>The hex disappears</strong><span>Five large crowns cover the whole top and spill past the edges, so the tile no longer reads as a hex.</span></li>
+        <li><strong>Trees merge into one mass</strong><span>The crowns overlap with no separation, so you can't count the trees or tell where one ends.</span></li>
+        <li><strong>Leaves are random noise</strong><span>Crown shading is noise plus a scallop pattern, which leaves hundreds of stray pixels instead of leaf clusters.</span></li>
+        <li><strong>The light breaks into speckle</strong><span>The noise term is as strong as the light term, so there's no clear lit side and shaded side on each tree.</span></li>
+        <li><strong>Outlines double up</strong><span>Soft and hard outlines from overlapping props land on top of each other and form thick dark seams.</span></li>
+        <li><strong>Details are scattered at random</strong><span>Flowers and leaf flecks were placed by hash, so some landed under crowns, on edges or on the wall.</span></li>
+        <li><strong>The log reads as a bar</strong><span>A flat brown strip with no cut end, so it doesn't read as a fallen log.</span></li>
+        <li><strong>The wall is noisy too</strong><span>Random pebbles, plates and vines make the side busier than the top, which pulls the eye down.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>Six ways to draw it</h2>
+    <p>Every candidate uses the same layout: four oaks, a bush, a fallen log, five flowers, four tufts and a mushroom. Nothing is random. Crowns are built from explicit clumps, facets or leaf stamps, the small props are hand-drawn sprites, and a cleanup pass removes any stray pixels left in the crowns and ground. The numbers are measured, not judged.</p>
+    <ul class="styles" id="styles"></ul>
+  </section>
+
+  <section>
+    <h2>The pick: Leafy Cluster</h2>
+    <p>It's the only style that passes every check. It keeps the scene's palette and soft lighting, so it drops into Verdant Isle without clashing, and its rules carry straight over to pines, bushes and the other tiles.</p>
+    <div class="compare">
+      <figure><div class="board"><canvas id="cmpOld" aria-label="Current Grove"></canvas></div><figcaption>Before</figcaption></figure>
+      <figure><div class="board"><canvas id="cmpNew" aria-label="Leafy Cluster Grove"></canvas></div><figcaption>After: Leafy Cluster</figcaption></figure>
+    </div>
+    <h3>Style rules to use on every tile</h3>
+    <ul class="rules">
+      <li><strong>One light, upper left</strong><span>Every shape is lit from the same corner: lit caps top-left, dark crescents bottom-right.</span></li>
+      <li><strong>Build from clumps, never noise</strong><span>A crown is 5 lobed clumps, each shaded on its own. Random shading is not allowed.</span></li>
+      <li><strong>Four tones per material</strong><span>Dark, mid, light and one highlight. The highlight only appears as small two-pixel leaf strokes.</span></li>
+      <li><strong>Selective outline</strong><span>One pixel around each prop: deep teal on the bottom and right, pine on the top and left. Never doubled.</span></li>
+      <li><strong>Keep the hex readable</strong><span>Trunks stand well inside the tile, and at least half of the top rim stays visible.</span></li>
+      <li><strong>Hand-place details</strong><span>Flowers, tufts, logs and mushrooms are drawn sprites, placed on open ground and checked to stay on the top face.</span></li>
+      <li><strong>Zero stray pixels</strong><span>A cleanup pass merges any pixel that matches none of its neighbours. Only intended accents, like a flower's center, stay single.</span></li>
+      <li><strong>Calm walls</strong><span>Even strata bands, a fixed drip rhythm and a single crease, so the top stays the focus.</span></li>
+    </ul>
+  </section>
+
+  <footer>Same 16-color palette throughout. Rendered live from code, so the numbers above are measured each time the page loads.</footer>
+</div>
+
+<script>
+// Verdant Isle: a 256x192, 16-color pixel scene of five hex tiles over a valley.
+// Everything is painted per pixel as palette indices, following Slynyrd's landscape process:
+// horizon bars, bands, far and near mountains, haze, clouds, then the near plane with the most contrast.
+// buildVerdantIsle() returns { W, H, PAL, NAMES, HEX, STEPS, render(step, t) } where render fills and returns a Uint8Array.
+function buildVerdantIsle() {
+  const W = 256, H = 192;
+  const PAL = ['#1a3445', '#23584c', '#2f7d46', '#56a43c', '#9bcb3e', '#e6e773', '#7fb39a', '#3f2b31',
+               '#77513c', '#b57f52', '#5f6e8a', '#a3b5c4', '#5f9edd', '#a9d5f0', '#f4f6ea', '#e8587d'];
+  const NAMES = ['deep', 'pine', 'leaf', 'grass', 'lime', 'glow', 'sage', 'bark',
+                 'soil', 'clay', 'stone', 'pale', 'sky', 'mist', 'cloud', 'rose'];
+  const [DEEP, PINE, LEAF, GRASS, LIME, GLOW, SAGE, BARK, SOIL, CLAY, STONE, PALE, SKY, MIST, CLOUD, ROSE] = PAL.map((_, i) => i);
+  const STEPS = ['Horizon bars', 'Sky and valley bands', 'Far mountains', 'Near range and haze', 'Near clouds',
+                 'Valley texture', 'Island block', 'Ground detail', 'Props', 'Life'];
+
+  const buf = new Uint8Array(W * H);
+  const face = new Int8Array(W * H);
+  const outMark = new Uint8Array(W * H); // 1 = soft outline, 2 = hard outline, for the style variants   // index of the hex top that owns a pixel, or -1
+  const ybot = new Int16Array(W).fill(-1); // lowest face pixel per column
+  const cut = new Int16Array(W).fill(-1);  // lowest island pixel per column
+
+  function hash(x, y, s = 0) {
+    let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(s | 0, 1442695041);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  }
+  function vnoise(x, y, s = 0) {
+    const ix = Math.floor(x), iy = Math.floor(y);
+    let fx = x - ix, fy = y - iy;
+    fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
+    const a = hash(ix, iy, s), b = hash(ix + 1, iy, s), c = hash(ix, iy + 1, s), d = hash(ix + 1, iy + 1, s);
+    return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+  }
+  const inb = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+  // Isolation state for the per-tile build views: ONLY limits drawing to one hex, REMAP flattens colors to a
+  // two-value block-in, SHADOW_ONLY lets props lay down their cast shadows without painting themselves.
+  let ONLY = -1, REMAP = null, SHADOW_ONLY = false, inShadow = false, MASK = null;
+  const BLOCK = { [GLOW]: GRASS, [LIME]: GRASS, [LEAF]: PINE, [CLOUD]: PALE, [CLAY]: SOIL, [MIST]: SKY };
+  const put = (x, y, c) => {
+    if (SHADOW_ONLY && !inShadow) return;
+    if (REMAP && !inShadow && REMAP[c] !== undefined) c = REMAP[c];
+    x = Math.floor(x); y = Math.floor(y);
+    if (inb(x, y)) { buf[y * W + x] = c; outMark[y * W + x] = 0; if (MASK && !inShadow) MASK[y * W + x] = 1; }
+  };
+  const at = (x, y) => (inb(x, y) ? buf[y * W + x] : -1);
+  const faceAt = (x, y) => { if (!inb(x, y)) return -1; const f = face[y * W + x]; return ONLY >= 0 && f !== ONLY ? -1 : f; };
+  const fillRows = (y0, y1, c) => buf.fill(c, Math.max(0, y0) * W, Math.min(H, y1) * W);
+
+  // Shadow is a darker, bluer step of the local hue.
+  const DARK = { [GRASS]: LEAF, [LIME]: GRASS, [LEAF]: PINE, [GLOW]: LIME, [SOIL]: BARK, [CLAY]: SOIL, [PINE]: DEEP,
+                 [CLOUD]: PALE, [PALE]: STONE, [ROSE]: SOIL, [SKY]: PINE, [MIST]: SKY };
+  const darken = (x, y) => { const c = at(x, y); if (c >= 0 && DARK[c] !== undefined) put(x, y, DARK[c]); };
+
+  const TONE = [-0.06, -0.1, 0, 0.07, -0.02]; // per-tile grass tone, so neighbouring tiles read apart
+  // ---------- hex layout: pointy-top, squashed for a 3/4 view ----------
+  const R = 35.8, HW = 31, K = 0.62, S3 = Math.sqrt(3);
+  const HEX = [
+    { id: 'A', name: 'Grove', x: 97, y: 85, front: false },
+    { id: 'B', name: 'Pines', x: 159, y: 85, front: false },
+    { id: 'C', name: 'Pond', x: 66, y: 118, front: true },
+    { id: 'D', name: 'Meadow', x: 128, y: 118, front: true },
+    { id: 'E', name: 'Rocks', x: 190, y: 118, front: true },
+  ];
+  function inHex(h, x, y) {
+    const dx = Math.abs(x + 0.5 - h.x), dy = Math.abs((y + 0.5 - h.y) / K);
+    return dx <= HW && dy <= R - dx / S3;
+  }
+  face.fill(-1);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+    HEX.forEach((h, i) => { if (inHex(h, x, y)) { face[y * W + x] = i; ybot[x] = Math.max(ybot[x], y); } });
+  const T = 12; // wall depth before the rocky underside
+  for (let x = 0; x < W; x++) {
+    if (ybot[x] < 0) continue;
+    const u = (x - 128) / 96;
+    const taper = 32 * Math.pow(Math.max(0, 1 - u * u), 1.3);
+    cut[x] = ybot[x] + T + Math.floor(taper * (0.75 + 0.25 * vnoise(x / 5, 3, 11)) + hash(x >> 1, 0, 12) * 3);
+  }
+
+  // Each tile on its own gets a short wall of its own, so back tiles show their sides in the build views.
+  const TILE = HEX.map((h, i) => {
+    const yb = new Int16Array(W).fill(-1), ct = new Int16Array(W).fill(-1);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (face[y * W + x] === i) yb[x] = Math.max(yb[x], y);
+    for (let x = 0; x < W; x++) if (yb[x] >= 0) {
+      if (h.front) { ct[x] = cut[x]; continue; } // front tiles keep their slice of the island's underside
+      const u = (x + 0.5 - h.x) / HW;
+      ct[x] = yb[x] + T + Math.floor(9 * Math.max(0, 1 - u * u) + hash(x >> 1, 0, 12) * 2);
+    }
+    return { yb, ct };
+  });
+  let YB = ybot, CUT = cut;
+
+  // ---------- background helpers ----------
+  // Linear streak texture across a band edge, the tutorial's way of blending a gradient without dither.
+  function blendEdge(yb, upper, lower, k, seed) {
+    for (let d = 1; d <= k; d++) {
+      const p = (1 - d / (k + 1)) * 0.75;
+      for (const [y, c, q] of [[yb - d, lower, p], [yb + d - 1, upper, p * 0.55]]) {
+        let x = Math.floor(hash(d, y, seed) * 6) - 6;
+        while (x < W) {
+          const len = 3 + Math.floor(hash(x, y, seed + 1) * 11);
+          if (hash(x + 7, y, seed + 2) < q) for (let i = 0; i < len; i++) put(x + i, y, c);
+          x += len + 1 + Math.floor(hash(x, y, seed + 3) * 5);
+        }
+      }
+    }
+  }
+  function makePeaks(seed, x0, x1, gap, yLo, yHi, sLo, sHi) {
+    const peaks = [];
+    for (let x = x0, i = 0; x < x1; i++) {
+      peaks.push({ x, y: yLo + hash(i, 1, seed) * (yHi - yLo), s: sLo + hash(i, 2, seed) * (sHi - sLo), seed: seed + i });
+      x += gap * (0.7 + hash(i, 3, seed) * 0.6);
+    }
+    return peaks;
+  }
+  // A mountain layer: silhouette is the lowest peak profile; right of each ridge line falls into shadow.
+  function range(peaks, base, body, shade, opt = {}) {
+    for (let x = 0; x < W; x++) {
+      let top = 1e9, own = null;
+      for (const p of peaks) {
+        const t = p.y + Math.abs(x - p.x) * p.s + (vnoise(x / 3, p.seed, 21) - 0.5) * 2.2;
+        if (t < top) { top = t; own = p; }
+      }
+      if (opt.bumps) { // tree crowns along a forested ridge
+        const cell = Math.floor(x / 4), u = (x % 4) - 1.5;
+        top -= Math.max(0, (2.2 - u * u * 0.55) * (0.4 + hash(cell, 0, opt.seed) * 0.8));
+      }
+      top = Math.round(top);
+      for (let y = Math.max(0, top); y < base; y++) {
+        const ridge = own.x + (y - own.y) * 0.32 + (vnoise(y / 4, own.seed, 22) - 0.5) * 4;
+        let c = x > ridge ? shade : body;
+        if (c === body && vnoise((x - (y - own.y) * 0.7) / 2.5, y / 7, own.seed + 40) > 0.8) c = shade; // gullies
+        if (opt.lit !== undefined && c === body && (y - top < 1 || ((x % 4 === 1) && ((y + (x >> 2)) % 4 === 0)))) c = opt.lit;
+        put(x, y, c);
+      }
+    }
+  }
+  function cloud(cx, cy, w, seed) {
+    const blobs = [];
+    for (let i = 0, n = Math.max(3, Math.round(w / 7)); i < n; i++) {
+      const f = i / (n - 1) - 0.5;
+      blobs.push({ x: cx + f * w, y: cy - (1 - Math.abs(f) * 1.8) * 4 - hash(i, 0, seed) * 3, r: 4 + (1 - Math.abs(f) * 1.6) * 4 + hash(i, 1, seed) * 2 });
+    }
+    for (let y = Math.floor(cy - 18); y <= cy + 1; y++) for (let x = Math.floor(cx - w); x <= cx + w; x++) {
+      let inside = false, lit = 0;
+      for (const b of blobs) {
+        const dx = x - b.x, dy = y - b.y, d2 = dx * dx + dy * dy;
+        if (d2 <= b.r * b.r) { inside = true; lit = Math.max(lit, (-dx * 0.5 - dy * 0.85) / b.r); }
+      }
+      if (!inside) continue;
+      const xx = ((x % W) + W) % W;
+      let c = CLOUD;
+      if (y >= cy - 1) c = y === cy + 1 ? PALE : MIST;          // flat shaded underside
+      else if (lit < -0.35) c = MIST;
+      else if (lit < -0.1 && (x + y) % 2 === 0 && y > cy - 4) c = MIST;
+      put(xx, y, c);
+    }
+  }
+
+  // ---------- props ----------
+  // A one-pixel outline around whatever fn paints, so each asset reads on busy grass:
+  // the darkest tone on the bottom and right, a softer dark on the lit top and left.
+  function outlined(fn, soft = PINE, hard = DEEP) {
+    const m = new Uint8Array(W * H), prev = MASK;
+    MASK = m; fn(); MASK = prev;
+    const marks = [];
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      const i = y * W + x;
+      if (m[i]) continue;
+      if (m[i - W] || m[i - 1] || m[i - W - 1]) marks.push(i, hard);
+      else if (m[i + W] || m[i + 1]) marks.push(i, soft);
+    }
+    for (let k = 0; k < marks.length; k += 2) { put(marks[k] % W, (marks[k] / W) | 0, marks[k + 1]); outMark[marks[k]] = marks[k + 1] === hard ? 2 : 1; }
+    if (prev) for (let i = 0; i < m.length; i++) if (m[i]) prev[i] = 1;
+  }
+  function shadowEllipse(cx, cy, rx, ry, onFaceOnly = true) {
+    inShadow = true;
+    for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+      const e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+      if (e <= 1 + (hash(x, y, 5) - 0.5) * 0.3 && (!onFaceOnly || faceAt(x, y) >= 0)) darken(x, y);
+    }
+    inShadow = false;
+  }
+  // Leaf canopy: clumps drawn top first so lower clumps overlap with their lit top-left rims, the clustering
+  // rule from the tutorial's foliage. A selective dark rim sits only on the shadow side.
+  function canopy(cx, cy, Rr, blobs, seed, opt = {}) {
+    blobs = blobs.slice().sort((a, b) => a[1] - b[1]);
+    for (const [bxo, byo, br] of blobs) {
+      const bx = cx + bxo, by = cy + byo;
+      for (let y = Math.floor(by - br - 1); y <= by + br + 1; y++) for (let x = Math.floor(bx - br - 1); x <= bx + br + 1; x++) {
+        const dx = x + 0.5 - bx, dy = y + 0.5 - by, d = Math.hypot(dx, dy);
+        const edge = br + (hash(x, y, seed) - 0.5) * 1.6;
+        if (d > edge) continue;
+        const l = (-0.6 * dx - 0.8 * dy) / br;
+        const g = (-0.45 * (x - cx) - 0.6 * (y - cy)) / Rr;
+        let v = 0.55 * l + 0.5 * g + (vnoise(x / 2, y / 2, seed + 1) - 0.5) * 0.35;
+        // scalloped sub-clusters: the bottom-right corner of each little leaf cell steps darker
+        const cxl = (x + ((y / 3) | 0) * 2) % 4, cyl = y % 3;
+        if (cxl === 3 && cyl === 2) v -= 0.35;
+        let c = v > 0.62 ? LIME : v > 0.25 ? GRASS : v > -0.12 ? LEAF : v > -0.5 ? PINE : DEEP;
+        if (v > 0.86 && hash(x, y, seed + 2) < 0.5 && !opt.noGlow) c = GLOW;
+        if (d > edge - 1 && l < -0.25) c = DEEP;
+        put(x, y, c);
+      }
+    }
+  }
+  function oak(x0, y0, s, seed) {
+    shadowEllipse(x0 + 7 * s, y0 + 1, 13 * s, 4 * s);
+    outlined(() => oakBody(x0, y0, s, seed));
+    for (let i = 0; i < 10; i++) { // fallen leaves and light flecks beneath
+      const fx = x0 + (hash(i, 9, seed) - 0.3) * 24 * s, fy = y0 + 2 + (hash(i, 10, seed) - 0.3) * 5;
+      if (faceAt(fx, fy) >= 0 && at(fx, fy) !== DEEP) put(fx, fy, hash(i, 11, seed) < 0.5 ? LIME : GLOW);
+    }
+  }
+  function oakBody(x0, y0, s, seed) {
+    const th = Math.round(11 * s);
+    for (let y = y0 - th; y <= y0; y++) {
+      put(x0 - 2, y, CLAY); put(x0 - 1, y, SOIL); put(x0, y, SOIL); put(x0 + 1, y, BARK);
+      if ((y + seed) % 5 === 0) put(x0, y, BARK);
+    }
+    put(x0 - 3, y0, SOIL); put(x0 + 2, y0, BARK); put(x0 + 3, y0, BARK); // root flare
+    for (let i = 0; i < 5; i++) { put(x0 - 2 - i, y0 - th - i, i < 2 ? SOIL : BARK); put(x0 + 1 + i, y0 - th - 1 - i, BARK); } // forks into the crown
+    const cy = y0 - th - 9 * s, r = (v) => v * s;
+    const jit = (i, k) => (hash(i, k, seed) - 0.5) * 3;
+    const wide = 0.85 + hash(0, 7, seed) * 0.35, lean = (hash(0, 8, seed) - 0.5) * 4; // no two crowns the same shape
+    const base = [[-8, 1, 7], [7, 0, 7], [0, -7, 8.5], [-4, -1, 7], [4, 5, 6], [-9, 6, 5], [9, 6, 5], [0, 3, 7.5], [-5, -10, 5], [5, -11, 5]];
+    const crown = base.filter((_, i) => i < 6 || hash(i, 6, seed) > 0.3);
+    canopy(x0, cy, 16 * s, crown.map(([a, b, c], i) => [r(a * wide + jit(i, 1) + lean * (b < 0 ? 1 : 0)), r(b + jit(i, 2)), r(c + jit(i, 3) * 0.5)]), seed);
+    // gaps in the crown where branches show through
+    for (const [gx, gy] of [[-5, 6], [6, 4], [1, 9]]) {
+      const px = Math.round(x0 + gx * s), py = Math.round(cy + gy * s);
+      put(px, py, DEEP); put(px + 1, py, DEEP); put(px, py + 1, BARK);
+    }
+  }
+  // Conifer: stacked drooping tiers, drawn bottom tier first so each upper tier's ragged hem overlaps the one below.
+  function pine(x0, y0, h, seed) {
+    shadowEllipse(x0 + h * 0.3, y0 + 1, h * 0.34, 3);
+    outlined(() => {
+      for (let y = y0 - 4; y <= y0; y++) { put(x0 - 1, y, SOIL); put(x0, y, BARK); }
+      const top = y0 - h, tiers = h > 26 ? 5 : 4, step = (h - 4) / tiers, maxW = h * 0.34;
+      for (let i = tiers - 1; i >= 0; i--) {
+        const tTop = Math.round(top + i * step * 0.78), tBot = Math.round(top + (i + 1) * step + 1);
+        const wB = maxW * (0.3 + 0.7 * (i + 1) / tiers);
+        for (let y = tTop; y <= tBot; y++) {
+          const f = (y - tTop) / Math.max(1, tBot - tTop), w = 0.6 + (wB - 0.6) * f;
+          for (let x = Math.floor(x0 - w); x <= Math.ceil(x0 + w) - 1; x++) {
+            if (y === tBot && (x + i) % 2 === 0) continue;            // drooping tips along the hem
+            const side = (x + 0.5 - x0) / w;
+            let c = PINE;
+            if (side < -0.15) c = LEAF;
+            if (side < -0.5 && f > 0.45) c = GRASS;                    // sunlit tier tips
+            if (side > 0.5 || (f > 0.82 && side > -0.2)) c = DEEP;     // tier underside and shade side
+            if (c === LEAF && hash(x, y, seed) < 0.14) c = GRASS;
+            if (c === PINE && hash(x, y, seed + 1) < 0.1) c = LEAF;
+            put(x, y, c);
+          }
+        }
+      }
+      put(x0, top - 1, LIME); put(x0 - 1, top, GRASS);
+    });
+  }
+  // Fern: arched fronds with leaflets on both sides, so it reads as a fern and not a tuft.
+  function fern(x0, y0, seed, size = 1) {
+    outlined(() => {
+      const fronds = [[-1, -0.35], [-0.6, -0.9], [0.05, -1], [0.65, -0.85], [1, -0.3]];
+      fronds.forEach(([fx, fy], k) => {
+        const n = Math.round((5 + (k === 2 ? 1 : 0)) * size);
+        for (let i = 1; i <= n; i++) {
+          const t = i / n, x = Math.round(x0 + fx * n * t), y = Math.round(y0 + fy * n * t + t * t * n * 0.45);
+          const lit = fx < 0.2;
+          put(x, y, lit ? GRASS : LEAF);
+          if (i % 2 === 0 && i < n) { put(x - 1, y - (fx > 0 ? 1 : 0), lit ? LIME : GRASS); put(x + 1, y - (fx < 0 ? 1 : 0), lit ? GRASS : LEAF); }
+        }
+      });
+      put(x0, y0, PINE);
+    }, PINE, DEEP);
+  }
+  function tuft(x0, y0, big, seed) {
+    const tall = big ? 3 : 2;
+    for (let i = 0; i <= tall; i++) put(x0, y0 - i, i === tall ? LIME : GRASS);
+    for (let i = 0; i < tall; i++) { put(x0 - 1 - (i >> 1), y0 - i, i === tall - 1 ? GRASS : LEAF); put(x0 + 1 + (i >> 1), y0 - i, LEAF); }
+  }
+  // Flowers: 0 poppy (rose cup), 1 daisy (white star, yellow eye), 2 buttercup (yellow cup), 3 lupine (rose spike).
+  // Front-row flowers stand on a 2-3px stem with a leaf; back-row ones are a single pixel.
+  function flower(x, y, kind, big) {
+    if (!big) { put(x, y, kind === 0 || kind === 3 ? ROSE : kind === 1 ? CLOUD : GLOW); return; }
+    const stem = kind === 3 ? 3 : 2;
+    for (let i = 1; i <= stem; i++) put(x, y + i, LEAF);
+    put(x + 1, y + stem, GRASS); put(x - 1, y + stem - 1, LEAF);
+    if (kind === 0) { put(x - 1, y, ROSE); put(x, y, SOIL); put(x + 1, y, ROSE); put(x - 1, y - 1, ROSE); put(x + 1, y - 1, ROSE); put(x, y - 1, ROSE); }
+    else if (kind === 1) { put(x, y, GLOW); put(x - 1, y, CLOUD); put(x + 1, y, CLOUD); put(x, y - 1, CLOUD); put(x, y + 1, CLOUD); }
+    else if (kind === 2) { put(x - 1, y - 1, GLOW); put(x + 1, y - 1, GLOW); put(x, y, GLOW); put(x - 1, y, LIME); put(x + 1, y, GLOW); }
+    else { for (let i = 0; i < 4; i++) { put(x, y - i, i === 3 ? CLOUD : ROSE); if (i < 2) put(x + (i ? -1 : 1), y - i, ROSE); } }
+  }
+  function boulder(x0, y0, a, b, seed) {
+    shadowEllipse(x0 + 2, y0 + 1, a + 2, 2.5);
+    outlined(() => boulderBody(x0, y0, a, b, seed), STONE, DEEP);
+  }
+  // Angular boulder: a jittered polygon with a flat base. Each side is one flat facet lit by its outward
+  // normal, and a smaller top plane catches the most light, so it reads as stone rather than an egg.
+  function boulderBody(x0, y0, a, b, seed) {
+    const cy = y0 - b, n = 7, pts = [];
+    for (let k = 0; k < n; k++) {
+      const ang = Math.PI + (k / (n - 1)) * Math.PI; // upper half, left to right
+      const rr = 0.85 + hash(k, 0, seed) * 0.3;
+      pts.push([x0 + Math.cos(ang) * a * rr, cy + Math.sin(ang) * b * 1.15 * rr]);
+    }
+    pts.push([x0 + a * 0.95, y0], [x0 - a * 0.95, y0]);
+    const top = pts.slice(1, n - 1).map(([px, py]) => [x0 - a * 0.12 + (px - x0) * 0.55, cy - b * 0.3 + (py - cy) * 0.5]);
+    const inPoly = (P, x, y) => {
+      let c = false;
+      for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+        const [xi, yi] = P[i], [xj, yj] = P[j];
+        if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+      }
+      return c;
+    };
+    const crackX = x0 + Math.round((hash(0, 0, seed) - 0.2) * a * 0.5);
+    for (let y = Math.floor(cy - b * 1.3); y <= y0; y++) for (let x = Math.floor(x0 - a - 1); x <= x0 + a + 1; x++) {
+      const px = x + 0.5, py = y + 0.5;
+      if (!inPoly(pts, px, py)) continue;
+      let c;
+      if (inPoly(top, px, py)) {
+        c = PALE;
+        if (!inPoly(top, px - 1, py) || !inPoly(top, px, py - 1)) c = CLOUD;     // lit edge of the top plane
+      } else if (py > cy) { // the upright lower sides: lit on the left, shade only toward the right edge
+        const u = (px - x0) / a;
+        c = u < -0.35 ? (hash(x, y, seed) < 0.35 ? PALE : STONE) : u > 0.4 ? DEEP : STONE;
+      } else {
+        const ang = Math.atan2((py - cy) / b, (px - x0) / a);
+        const sector = Math.round((ang + Math.PI) / (Math.PI / 3));
+        const na = sector * (Math.PI / 3) - Math.PI;
+        const l = -0.6 * Math.cos(na) - 0.8 * Math.sin(na);
+        c = l > 0.35 ? PALE : l > -0.25 ? STONE : DEEP;
+        if (py > y0 - 1.5) c = c === PALE ? STONE : DEEP;                          // base sits in its own shade
+      }
+      const ny = (py - cy) / b;
+      const moss = inPoly(top, px, py) && (ny < -0.6 + (vnoise(x / 2, 0, seed) - 0.5) * 0.8);
+      if (moss) c = c === CLOUD ? LIME : (hash(x, y, seed) < 0.3 ? LIME : GRASS);
+      if (Math.abs(px - (crackX + (py - cy) * 0.5)) < 0.6 && ny > -0.2 && ny < 0.9) c = DEEP;
+      put(x, y, c);
+    }
+  }
+  function berryBush(x0, y0, seed) {
+    shadowEllipse(x0 + 4, y0 + 1, 8, 2.5);
+    outlined(() => {
+      canopy(x0, y0 - 5, 8, [[-4, 1, 4.5], [4, 1, 4.5], [0, -2, 5], [-1, 2, 4.5], [3, -3, 3.5]], seed, { noGlow: true });
+      for (let i = 0; i < 16; i++) { // berries in little pairs, each with a glint on its lit side
+        const bx = x0 + Math.round((hash(i, 0, seed) - 0.5) * 13), by = y0 - 2 - Math.round(hash(i, 1, seed) * 8);
+        const c = at(bx, by);
+        if (c === GRASS || c === LEAF || c === LIME) { put(bx, by, ROSE); put(bx + 1, by, i % 2 ? ROSE : SOIL); put(bx, by - 1, c === LIME ? CLOUD : at(bx, by - 1)); }
+      }
+    });
+  }
+  function mushroom(x, y, big = true) {
+    shadowEllipse(x + 1, y + 1, 3, 1.2);
+    outlined(() => {
+      put(x, y, CLOUD); put(x, y - 1, CLOUD); put(x + 1, y, PALE); put(x + 1, y - 1, PALE);   // stem
+      const rows = big ? [[-1, 1], [-2, 2], [-3, 3]] : [[-1, 1], [-2, 2]];
+      rows.forEach(([a, b], k) => { for (let i = a; i <= b + 1; i++) put(x + i, y - 2 - rows.length + k, i > b - 1 ? SOIL : ROSE); });
+      for (let i = rows[rows.length - 1][0] + 1; i <= rows[rows.length - 1][1]; i++) put(x + i, y - 1 - (big ? 0 : 0), i === 0 || i === 1 ? at(x + i, y - 1) : PALE);
+      put(x - 1, y - 2 - rows.length + 1, CLOUD); put(x + 1, y - 2 - rows.length + 2, CLOUD); if (big) put(x - 2, y - 3, CLOUD); // spots
+    }, BARK, BARK);
+  }
+  function cattail(x, y, h) {
+    outlined(() => {
+      for (let i = 0; i < h; i++) put(x, y - i, i > h - 4 ? GRASS : LEAF);
+      for (let i = 0; i < 4; i++) { put(x, y - h - i, i === 0 ? BARK : SOIL); put(x + 1, y - h - i, BARK); } // the brown head
+      put(x, y - h - 4, LIME); put(x, y - h - 5, LIME);
+      for (let i = 0; i < h - 2; i++) put(x - 1 - (i >> 2), y - i, i > h - 5 ? LIME : GRASS); // one long blade
+    }, PINE, DEEP);
+  }
+  // ---------- pond, channel, waterfall ----------
+  const pondC = HEX[2];
+  const channel = [[51, 124], [49, 127], [47, 130], [45, 132.5]];
+  function inPond(x, y) {
+    const e = ((x + 0.5 - 61) / 19) ** 2 + ((y + 0.5 - 119) / 7.5) ** 2;
+    if (e <= 1 + (vnoise(x / 4, y / 3, 77) - 0.5) * 0.35) return true;
+    for (const [cx, cy] of channel) if (Math.hypot(x + 0.5 - cx, (y + 0.5 - cy) * 1.3) < 2.6) return faceAt(x, y) === 2;
+    return false;
+  }
+  const FALL = [42, 48];
+  function waterfall(t) {
+    for (let x = FALL[0] - 4; x <= FALL[1] + 4; x++) {
+      const top = YB[Math.min(Math.max(x, FALL[0]), FALL[1])];
+      for (let y = top; y < 188; y++) {
+        const spread = (y - top) / 34;
+        const l = FALL[0] - spread * 0.6, r = FALL[1] + spread;
+        if (x < Math.floor(l) || x > Math.ceil(r)) continue;
+        if (y < top + 1 && (x < FALL[0] || x > FALL[1])) continue;
+        let c = MIST;
+        if (x <= l + 0.5) c = CLOUD; else if (x >= r - 0.6) c = SKY;
+        else if (hash(x, Math.floor((y - t * 34) / 4), 61) < 0.32) c = CLOUD;
+        else if (hash(x, Math.floor((y - t * 34) / 3), 62) < 0.18) c = SKY;
+        if (y > 172) { // mist plume dissolving into the valley haze
+          const k = (y - 172) / 16;
+          if (hash(x, y, Math.floor(t * 8)) < k * 0.9) continue;
+          c = (x + y) % 2 ? CLOUD : MIST;
+        }
+        put(x, y, c);
+      }
+      if (x === FALL[0] || x === FALL[1]) put(x, top, CLOUD); // water curling over the lip
+    }
+  }
+
+  // ---------- path across the meadow, up between the back hexes ----------
+  const PATH = [[128, 142], [131, 133], [128, 123], [126, 113], [128, 103], [129, 93], [128, 84], [128, 76]];
+  function pathDist(x, y) {
+    let best = 1e9, by = y;
+    for (let i = 0; i < PATH.length - 1; i++) {
+      const [ax, ay] = PATH[i], [bx, bY] = PATH[i + 1];
+      const vx = bx - ax, vy = (bY - ay) / K, wx = x + 0.5 - ax, wy = (y + 0.5 - ay) / K;
+      const t = Math.max(0, Math.min(1, (wx * vx + wy * vy) / (vx * vx + vy * vy)));
+      const dx = wx - vx * t, dy = wy - vy * t, d = Math.hypot(dx, dy);
+      if (d < best) { best = d; by = ay + (bY - ay) * t; }
+    }
+    return { d: best, w: 0.8 + Math.max(0, (by - 72) / 70) * 5 };
+  }
+
+  // ---------- the passes ----------
+  function background(step, t) {
+    // 1: flat horizon bars
+    fillRows(0, 104, step >= 2 ? SKY : SKY);
+    fillRows(104, H, SAGE);
+    if (step < 2) return;
+    // 2: bands, joined by streaks; far clouds baked into the gradient
+    fillRows(30, 60, MIST); fillRows(60, 104, CLOUD);
+    fillRows(106, 128, SAGE); fillRows(128, H, LEAF);
+    blendEdge(30, SKY, MIST, 6, 31); blendEdge(60, MIST, CLOUD, 7, 32); blendEdge(128, SAGE, LEAF, 6, 33);
+    for (let y = 8; y < 58; y++) for (let x = 0; x < W; x++) {
+      const v = vnoise(x / 26, y / 2.6, 34);
+      if (y < 30 && v > 0.76) put(x, y, MIST);
+      else if (y >= 30 && v > 0.73 && hash(x >> 2, y, 35) < 0.85) put(x, y, CLOUD);
+    }
+    if (step < 3) return;
+    // 3: far range, lighter and bluer, shadows reuse the sky
+    range(makePeaks(41, -20, 290, 34, 60, 76, 0.5, 0.85), 106, MIST, SKY);
+    if (step >= 5) { // 5: near clouds among the mountains, drifting
+      const drift = t * 1.6;
+      for (const [cx, cy, w, s] of [[30, 54, 26, 51], [118, 48, 34, 52], [205, 56, 22, 53], [292, 50, 28, 54]]) {
+        let x = ((cx + drift) % (W + 70)) - 35;
+        cloud(x, cy, w, s);
+      }
+    }
+    if (step < 4) return;
+    // 4: near forested range, darker and bluer than the grass, haze band at its foot
+    range(makePeaks(71, -30, 300, 46, 80, 92, 0.28, 0.45), 108, LEAF, PINE, { bumps: true, seed: 72, lit: SAGE });
+    for (let y = 97; y < 110; y++) {
+      const p = (y - 97) / 12;
+      let x = Math.floor(hash(y, 0, 81) * 8) - 8;
+      while (x < W) {
+        const len = 4 + Math.floor(hash(x, y, 82) * 12);
+        if (hash(x, y, 83) < p * 0.95) for (let i = 0; i < len; i++) put(x + i, y, MIST);
+        x += len + Math.floor(hash(x, y, 84) * 4);
+      }
+    }
+    for (let y = 106; y < 109; y++) for (let x = 0; x < W; x++) if (hash(x, y, 85) < 0.85) put(x, y, MIST);
+    blendEdge(110, MIST, SAGE, 3, 86);
+    if (step < 6) return;
+    // 6: valley texture. Farther planes: no blades. Nearer: 1-2px clusters, then blades and a darker shade.
+    for (let y = 110; y < H; y++) for (let x = 0; x < W; x++) {
+      const h = hash(x, y, 91);
+      if (y < 126) { if (h < 0.05) put(x, y, MIST); continue; }
+      if (y < 150) {
+        if (h < 0.07) { put(x, y, vnoise(x / 9, y / 5, 92) > 0.5 ? SAGE : PINE); if (y > 140 && h < 0.05) put(x, y - 1, PINE); }
+        continue;
+      }
+      const v = vnoise(x / 8, y / 5, 93);
+      if (h < 0.13 && (v > 0.58 || v < 0.36)) { const c = v > 0.55 ? SAGE : PINE; put(x, y, c); put(x, y - 1, c); if (h < 0.05) put(x, y - 2, c); }
+    }
+    // distant trees reuse the near greens: hedgerows of small clumps across the valley planes
+    for (let i = 0; i < 46; i++) {
+      const bx = hash(i, 0, 95) * W, by = 112 + hash(i, 1, 95) * 26, r = 1.5 + hash(i, 2, 95) * 2.2 + (by - 112) / 16;
+      for (let y = Math.floor(by - r); y <= by; y++) for (let x = Math.floor(bx - r); x <= bx + r; x++) {
+        const dx = x + 0.5 - bx, dy = y + 0.5 - by;
+        if (dx * dx + dy * dy > r * r) continue;
+        put(x, y, dx + dy < -r * 0.6 ? SAGE : dx > r * 0.35 || dy > -0.5 ? PINE : LEAF);
+      }
+    }
+  }
+
+  function island(step, t, fall = true) {
+    // walls, strata, rocky underside
+    for (let x = 0; x < W; x++) {
+      if (YB[x] < 0) continue;
+      const own = HEX[face[YB[x] * W + x]];
+      const lit = x + 0.5 < own.x;
+      const crease = Math.abs(x + 0.5 - own.x) < 0.6 || (x > 0 && YB[x - 1] >= 0 && face[YB[x - 1] * W + x - 1] !== face[YB[x] * W + x]);
+      const drip = hash(x, 0, 101) < 0.4 ? 1 + Math.floor(hash(x, 1, 101) * 3) : 0;
+      const strata = Math.floor(vnoise(x / 9, 0, 102) * 3);
+      for (let y = YB[x] + 1; y <= CUT[x]; y++) {
+        const d = y - YB[x];
+        let c;
+        if (step < 8) c = d <= 1 ? (lit ? GRASS : LEAF) : d <= T ? (lit ? SOIL : BARK) : STONE;
+        else if (d <= 1 + drip) c = lit ? (d === 1 && hash(x, y, 103) < 0.4 ? LIME : GRASS) : LEAF;
+        else if (d <= 4) c = BARK;
+        else if (d <= T) {
+          c = lit ? SOIL : (hash(x, y, 104) < 0.5 ? SOIL : BARK);
+          if ((d + strata) % 4 === 0 && hash(x >> 1, y, 105) > 0.25) c = lit ? CLAY : BARK;
+          if (hash(x >> 1, y, 106) < 0.05) c = lit ? PALE : STONE;
+          if (crease) c = BARK;
+        } else {
+          const v = vnoise(x / 6, y / 4, 107), bottom = CUT[x] - y;
+          c = STONE;
+          if (lit && v > 0.66) c = PALE;
+          if (!lit && v < 0.34) c = DEEP;
+          if (v > 0.475 && v < 0.5 && hash(x, y, 110) < 0.7) c = DEEP;   // cracks between rock plates
+          if (d === T + 1) c = BARK;
+          if (bottom < 2 || (bottom < 4 && hash(x, y, 108) < 0.5)) c = DEEP;
+          if (vnoise(x / 7, y / 4, 109) > 0.78 && bottom > 3) c = lit ? SOIL : BARK;
+        }
+        put(x, y, c);
+      }
+    }
+    if (step < 8) return;
+    if (fall && (ONLY < 0 || ONLY === 2)) waterfall(t);
+    // hanging vines and roots
+    for (let x = 0; x < W; x++) {
+      if (YB[x] < 0 || (x >= FALL[0] - 2 && x <= FALL[1] + 3)) continue;
+      const h = hash(x, 0, 111);
+      if (h < 0.09) {
+        const len = 6 + Math.floor(hash(x, 1, 111) * (CUT[x] - YB[x] + 4));
+        const lit = x + 0.5 < HEX[face[YB[x] * W + x]].x;
+        for (let i = 2; i < len; i++) {
+          const vx = x + Math.round(Math.sin(i * 0.45 + x) * 0.7), vy = YB[x] + i;
+          put(vx, vy, lit ? LEAF : PINE);
+          if (i % 3 === 0) put(vx + (i % 6 ? -1 : 1), vy, lit ? GRASS : LEAF);
+        }
+        put(x, YB[x] + len, lit ? LIME : GRASS);
+      } else if (h > 0.95 && CUT[x] - YB[x] > T + 6) {
+        const len = 3 + Math.floor(hash(x, 2, 111) * 7);
+        for (let i = 0; i < len; i++) put(x + (i % 4 === 3 ? 1 : 0), CUT[x] + 1 + i, BARK);
+      }
+    }
+  }
+
+  function ground(step, t, L = { tex: true, rims: true, feat: true }) {
+    // flat tops first
+    for (let i = 0; i < W * H; i++) if (face[i] >= 0 && (ONLY < 0 || face[i] === ONLY)) buf[i] = GRASS;
+    if (step < 8) return;
+    if (L.tex) {
+    // grass streaks: 1px vertical, scaled by row. Front row: 3-4px blades. Back row: 1-2px clusters.
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const f = faceAt(x, y);
+      if (f < 0) continue;
+      const h = HEX[f];
+      const u = (x - h.x) / HW, v = (y - h.y) / 11;
+      const light = -0.35 * u - 0.45 * v;
+      const P = vnoise(x / 9, y / 5, 121) + light * 0.35 + TONE[f];
+      const r = hash(x, y, 122);
+      const strong = P > 0.6 || P < 0.4;
+      if (r > (h.front ? 0.17 : 0.13) * (strong ? 1 : 0.25)) continue;
+      const c = P > 0.55 ? LIME : P < 0.45 ? LEAF : null;
+      if (c === null) continue;
+      const len = h.front ? 3 + (r < 0.05 ? 1 : 0) : 1 + (r < 0.06 ? 1 : 0);
+      for (let i = 0; i < len; i++) if (faceAt(x, y - i) === f) put(x, y - i, i === len - 1 && c === LIME && h.front && P > 0.8 ? GLOW : c);
+    }
+    }
+    if (L.rims) {
+    // rims and seams: lit top-left lips, a dark groove where two tiles meet with a lit bevel on the far side
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const f = faceAt(x, y);
+      if (f < 0) continue;
+      const up = faceAt(x, y - 1), dn = faceAt(x, y + 1), rt = faceAt(x + 1, y), lf = faceAt(x - 1, y);
+      if (up < 0) put(x, y, x + 0.5 < HEX[f].x ? LIME : GRASS);
+      if ((dn >= 0 && dn !== f) || (rt >= 0 && rt !== f)) put(x, y, hash(x, y, 123) < 0.12 ? LEAF : PINE);
+      else if ((up >= 0 && up !== f) || (lf >= 0 && lf !== f)) put(x, y, hash(x, y, 124) < 0.2 ? GRASS : LIME);
+    }
+    }
+    if (!L.feat) return;
+    // path
+    for (let y = 60; y < H; y++) for (let x = 100; x < 160; x++) {
+      if (faceAt(x, y) < 0) continue;
+      const { d, w } = pathDist(x, y);
+      const e = d - w + (hash(x, y, 131) - 0.5) * 0.7;
+      if (e > 0) continue;
+      let c = w > 2.2 && e < -1.6 ? CLAY : SOIL;
+      const side = x + 0.5 - (PATH.reduce((a, p) => (Math.abs(p[1] - y) < Math.abs(a[1] - y) ? p : a))[0]);
+      if (e > -1) c = side < 0 ? SOIL : BARK;
+      else if (hash(x, y, 132) < 0.07) c = w > 2.5 ? PALE : SOIL;
+      put(x, y, c);
+    }
+    // pond: dark far bank, tree reflections, sky body, light streaks, sparkles
+    for (let y = 100; y < 140; y++) for (let x = 36; x < 90; x++) {
+      if (!inPond(x, y) || faceAt(x, y) < 0) continue;
+      const above = inPond(x, y - 1), above2 = inPond(x, y - 2), above3 = inPond(x, y - 3);
+      let c = SKY;
+      if (!above) c = BARK;
+      else if (!above2) c = PINE;
+      else if (!above3 && hash(x, y, 141) < 0.6) c = PINE;
+      else {
+        if (hash(x >> 2, y, 142) < 0.22 && y % 2 === 0) c = MIST;
+        if (hash(Math.floor((x + t * 2) / 2), y, 143 + Math.floor(t * 2) % 3) < 0.04) c = CLOUD;
+        if (y > 124 && (x + Math.floor(t * 6) + y * 3) % 7 === 0) c = MIST; // ripples running down the channel
+      }
+      put(x, y, c);
+      if (!inPond(x, y + 1) && faceAt(x, y + 1) >= 0) put(x, y + 1, hash(x, y, 144) < 0.5 ? CLAY : SOIL);
+    }
+  }
+
+  function props(step, t, P = { main: true, detail: true }) {
+    const list = [];
+    let tile = 0, kind = 'main';
+    const add = (y, fn) => list.push({ y, fn, tile, kind });
+    const on = (i, k) => { tile = i; kind = k; };
+    on(0, 'main');
+    // A Grove: a cluster of broadleaf trees of different sizes under one shaded floor, with undergrowth and a log
+    add(60, () => shadowEllipse(98, 94, 24, 8));
+    add(78, () => oak(96, 78, 0.7, 23));
+    add(86, () => oak(114, 86, 0.82, 19));
+    add(89, () => oak(76, 89, 0.62, 31));
+    add(97, () => oak(90, 97, 1.0, 7));
+    add(103, () => oak(117, 103, 0.5, 37));
+    add(104, () => outlined(() => canopy(74, 101, 7, [[-3, 1, 4], [3, 1, 4], [0, -2, 4.5], [5, -1, 3]], 182)));
+    add(102, () => outlined(() => { // fallen log with a cut end
+      for (let x = 100; x <= 108; x++) { put(x, 100, CLAY); put(x, 101, SOIL); put(x, 102, BARK); }
+      put(109, 100, CLAY); put(109, 101, GLOW); put(109, 102, CLAY); put(110, 101, CLAY);
+      put(103, 99, GRASS); put(106, 99, LIME);
+    }, BARK, DEEP));
+    on(0, 'detail');
+    add(105, () => { fern(84, 105, 11, 0.8); tuft(124, 96, false); });
+    on(1, 'main');
+    // B Pines: a stand of conifers on a needle-dark floor, ferns at their roots
+    add(60, () => shadowEllipse(162, 92, 26, 9));
+    add(76, () => pine(160, 76, 24, 8));
+    add(80, () => pine(146, 80, 26, 3));
+    add(83, () => pine(181, 83, 30, 4));
+    add(92, () => pine(167, 92, 37, 5));
+    add(99, () => pine(150, 99, 21, 9));
+    add(101, () => pine(183, 101, 18, 12));
+    on(1, 'detail');
+    add(102, () => { fern(160, 102, 1); fern(140, 93, 3, 0.8); fern(175, 97, 2, 0.8); });
+    on(2, 'main');
+    // C Pond: lily pads, cattails, bank stones
+    for (const [px, py, bloom] of [[54, 119, true], [67, 121, false], [61, 116, false]]) add(py - 20, () => outlined(() => {
+      for (let y = py - 2; y <= py + 2; y++) for (let x = px - 4; x <= px + 4; x++) {
+        const e = ((x + 0.5 - px) / 3.4) ** 2 + ((y + 0.5 - py) / 1.6) ** 2;
+        if (e > 1) continue;
+        put(x, y, x - px + (y - py) * 2 < -1 ? GRASS : LEAF);
+      }
+      put(px + 2, py - 1, SKY); put(px + 2, py, SKY); // the notch
+      if (bloom) { put(px - 1, py - 1, ROSE); put(px, py - 2, CLOUD); put(px + 1, py - 1, ROSE); put(px, py - 1, GLOW); }
+    }, SKY, PINE));
+    add(118, () => { cattail(78, 117, 10); cattail(81, 119, 8); cattail(84, 120, 11); cattail(75, 121, 7); });
+    add(127, () => { boulder(70, 128, 3, 2, 191); boulder(44, 123, 2.5, 1.8, 192); });
+    on(2, 'detail');
+    add(128, () => { tuft(72, 132, true); tuft(40, 119, true); fern(88, 125, 4, 0.8); flower(50, 112, 2, true); flower(85, 131, 1, true); flower(59, 131, 0, true); });
+    on(3, 'detail');
+    // D Meadow: single-kind clumps of poppies, daisies, buttercups and lupines, tall grass, butterflies
+    const flowers = [];
+    const clumps = [[110, 110, 1], [118, 128, 0], [140, 112, 0], [145, 126, 1], [114, 120, 2], [137, 133, 2], [149, 118, 3], [108, 128, 3], [122, 104, 2], [134, 104, 1]];
+    clumps.forEach(([cx, cy, kind], i) => {
+      for (let j = 0; j < 11; j++) {
+        const fx = Math.round(cx + (hash(i, j + 2, 152) - 0.5) * 10), fy = Math.round(cy + (hash(i, j + 2, 153) - 0.5) * 5);
+        if (faceAt(fx, fy) === 3 && faceAt(fx, fy + 3) === 3 && pathDist(fx, fy).d > pathDist(fx, fy).w + 1.5 &&
+            !flowers.some(([ax, ay]) => Math.abs(ax - fx) < 3 && Math.abs(ay - fy) < 2)) flowers.push([fx, fy, kind]);
+      }
+    });
+    for (const [fx, fy, k] of flowers) add(fy, () => flower(fx, fy, k, true));
+    for (const [tx, ty] of [[112, 134], [143, 129], [126, 112], [151, 122], [104, 118]]) add(ty, () => tuft(tx, ty, true));
+    // A and B: small flowers at the farther scale, kept out of the shaded floors
+    for (let i = 0; i < 22; i++) {
+      const fx = Math.round(70 + hash(i, 0, 161) * 118), fy = Math.round(68 + hash(i, 1, 161) * 38), f = face[fy * W + fx];
+      if ((f === 0 || f === 1) && pathDist(fx, fy).d > 3) { on(f, 'detail'); add(fy, () => { if (at(fx, fy) === GRASS || at(fx, fy) === LIME) flower(fx, fy, i % 3, false); }); }
+    }
+    on(4, 'main');
+    // E Rocks: angular mossy boulders, a berry bush, mushrooms, pebbles
+    add(127, () => boulder(199, 127, 11, 7, 171));
+    add(115, () => boulder(184, 115, 7, 5, 172));
+    add(108, () => boulder(207, 108, 5, 3.5, 173));
+    add(131, () => boulder(214, 134, 3, 2, 175));
+    add(130, () => berryBush(175, 131, 174));
+    on(4, 'detail');
+    add(134, () => { mushroom(206, 136); mushroom(210, 133, false); mushroom(188, 131, false); });
+    add(121, () => { flower(170, 118, 1, true); flower(216, 118, 0, true); tuft(192, 103, true); tuft(165, 124, true); });
+    for (const [px, py] of [[194, 131], [205, 119], [179, 120], [220, 125]]) add(py, () => { put(px, py, PALE); put(px + 1, py, STONE); put(px + 1, py + 1, DEEP); });
+    list.filter((p) => (ONLY < 0 || p.tile === ONLY) && P[p.kind]).sort((a, b) => a.y - b.y).forEach((p) => p.fn());
+
+    if (step < 10 || ONLY >= 0) return;
+    // life: butterflies over the meadow, birds over the far range
+    for (const [ph, wing, ax] of [[0, CLOUD, 0], [2.1, GLOW, 1]]) {
+      const bx = 128 + Math.sin(t * 0.6 + ph) * 16 + ax * 6, by = 104 + Math.sin(t * 1.3 + ph) * 5;
+      const open = Math.floor(t * 7 + ph * 3) % 2 === 0;
+      put(bx, by, BARK);
+      if (open) { put(bx - 1, by, wing); put(bx + 1, by, wing); put(bx - 1, by - 1, wing); put(bx + 1, by - 1, wing); }
+      else { put(bx, by - 1, wing); put(bx - 1, by - 1, wing); }
+    }
+    for (const [ox, oy, ph] of [[0, 20, 0], [9, 25, 1.7]]) {
+      const bx = ((ox + 30 + t * 5) % (W + 30)) - 15, by = oy + Math.sin(t * 0.8 + ph) * 2;
+      const up = Math.floor(t * 4 + ph) % 2 === 0;
+      put(bx, by, STONE); put(bx - 1, by - (up ? 1 : 0), STONE); put(bx + 1, by - (up ? 1 : 0), STONE);
+      if (up) { put(bx - 2, by - 1, STONE); put(bx + 2, by - 1, STONE); }
+    }
+  }
+
+  // Build stages for one tile on its own, transparent (255) around it.
+  const TILE_STAGES = ['Tile shape', 'Sides and rims', 'Grass texture', 'Ground and shadows', 'Props block-in', 'Props shaded', 'Details', 'In the scene'];
+  function renderTile(i, stage, t = 0) {
+    if (stage >= 8) { render(STEPS.length, t); return buf; }
+    ONLY = i; YB = TILE[i].yb; CUT = TILE[i].ct;
+    buf.fill(255); outMark.fill(0);
+    island(stage >= 2 ? 8 : 7, t, stage >= 4);
+    ground(stage >= 2 ? 8 : 7, t, { tex: stage >= 3, rims: stage >= 2, feat: stage >= 4 });
+    if (stage === 4) { SHADOW_ONLY = true; props(9, t, { main: true, detail: false }); SHADOW_ONLY = false; }
+    if (stage >= 5) { REMAP = stage === 5 ? BLOCK : null; props(9, t, { main: true, detail: stage >= 7 }); REMAP = null; }
+    ONLY = -1; YB = ybot; CUT = cut;
+    return buf;
+  }
+  // Pixel box around a tile for the build views.
+  const tileBox = (i) => ({ x: HEX[i].x - 40, y: HEX[i].y - 50, w: 80, h: 112 });
+  const tileAt = (x, y) => (inb(x, y) ? face[y * W + x] : -1);
+
+  function render(step = STEPS.length, t = 0) {
+    buf.fill(SKY); outMark.fill(0);
+    background(step, t);
+    if (step >= 7) { island(step, t); ground(step, t); }
+    if (step >= 9) props(step, t);
+    return buf;
+  }
+
+  return { W, H, PAL, NAMES, HEX, STEPS, TILE_STAGES, K, render, renderTile, tileBox, tileAt, outMark };
+}
+
+// Grove redraw study: the same Grove tile drawn five ways, each a different drawing technique rather than a
+// palette swap. Nothing here uses random noise. Shapes are built from explicit clumps, facets and hand-placed
+// sprites, then a cleanup pass removes stray single pixels from the crowns and ground.
+// buildGroveRedraws() returns [{ id, name, ..., w, h, px: Array<'#rrggbb'|null>, metrics }].
+function buildGroveRedraws() {
+  const C = {
+    deep: '#1a3445', pine: '#23584c', leaf: '#2f7d46', grass: '#56a43c', lime: '#9bcb3e', glow: '#e6e773',
+    sage: '#7fb39a', bark: '#3f2b31', soil: '#77513c', clay: '#b57f52', stone: '#5f6e8a', pale: '#a3b5c4',
+    cloud: '#f4f6ea', rose: '#e8587d', ink: '#141d26',
+  };
+
+  class Cv {
+    constructor(w, h) { this.w = w; this.h = h; this.px = new Array(w * h).fill(null); this.mask = null; this.tag = new Uint8Array(w * h); }
+    in(x, y) { return x >= 0 && y >= 0 && x < this.w && y < this.h; }
+    set(x, y, c) { x = Math.floor(x); y = Math.floor(y); if (!this.in(x, y) || !c) return; this.px[y * this.w + x] = c; if (this.mask) this.mask[y * this.w + x] = 1; }
+    get(x, y) { return this.in(x, y) ? this.px[y * this.w + x] : null; }
+    // Paint fn, then outline exactly what it painted: `hard` on the bottom/right, `soft` on the top/left.
+    outlined(fn, soft, hard) {
+      const m = new Uint8Array(this.w * this.h), prev = this.mask;
+      this.mask = m; fn(); this.mask = prev;
+      const marks = [];
+      for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) {
+        const i = y * this.w + x;
+        if (m[i]) continue;
+        const at = (xx, yy) => this.in(xx, yy) && m[yy * this.w + xx];
+        if (at(x, y - 1) || at(x - 1, y)) marks.push([x, y, hard]);
+        else if (at(x, y + 1) || at(x + 1, y)) marks.push([x, y, soft]);
+      }
+      marks.forEach(([x, y, c]) => this.set(x, y, c));
+      if (prev) m.forEach((v, i) => { if (v) prev[i] = 1; });
+    }
+    // A hand-drawn sprite: rows of characters, each mapped to a color by the legend ('.' is empty).
+    sprite(x0, y0, rows, legend) { rows.forEach((r, y) => [...r].forEach((ch, x) => { if (legend[ch]) this.set(x0 + x, y0 + y, legend[ch]); })); }
+  }
+
+  // A pixel that matches none of its four neighbours reads as noise. Merge it into its most common neighbour.
+  function cleanup(cv, keep = new Set()) {
+    let fixed = 0;
+    for (let pass = 0; pass < 2; pass++) {
+      const src = cv.px.slice();
+      for (let y = 1; y < cv.h - 1; y++) for (let x = 1; x < cv.w - 1; x++) {
+        const c = src[y * cv.w + x];
+        if (!c || keep.has(c)) continue;
+        const n = [src[(y - 1) * cv.w + x], src[(y + 1) * cv.w + x], src[y * cv.w + x - 1], src[y * cv.w + x + 1]];
+        if (n.includes(c) || n.some((v) => !v)) continue;
+        const count = new Map(); n.forEach((v) => count.set(v, (count.get(v) || 0) + 1));
+        cv.px[y * cv.w + x] = [...count.entries()].sort((a, b) => b[1] - a[1])[0][0];
+        fixed++;
+      }
+    }
+    return fixed;
+  }
+  function orphans(cv) {
+    let n = 0;
+    for (let y = 1; y < cv.h - 1; y++) for (let x = 1; x < cv.w - 1; x++) {
+      const c = cv.px[y * cv.w + x];
+      if (!c) continue;
+      const nb = [cv.px[(y - 1) * cv.w + x], cv.px[(y + 1) * cv.w + x], cv.px[y * cv.w + x - 1], cv.px[y * cv.w + x + 1]];
+      if (!nb.includes(c) && !nb.some((v) => !v)) n++;
+    }
+    return n;
+  }
+
+  // ---------- the tile ----------
+  // Pointy-top hex, squashed for a 3/4 view. `s` scales everything for the low-res style.
+  function hexGeom(s) { return { x: 48 * s, y: 70 * s, hw: 30 * s, hh: 17 * s, wall: Math.round(11 * s) }; }
+  const inHex = (g, x, y) => { const dx = Math.abs(x + 0.5 - g.x), dy = Math.abs(y + 0.5 - g.y); return dx <= g.hw && dy <= g.hh - (g.hh / 2) * (dx / g.hw); };
+  function bottoms(cv, g) { const b = new Array(cv.w).fill(-1); for (let x = 0; x < cv.w; x++) for (let y = 0; y < cv.h; y++) if (inHex(g, x, y)) b[x] = y; return b; }
+
+  // Tile: flat top, lit rim on the top-left edges, two wall faces with banded strata. opt picks the idiom.
+  function tile(cv, g, opt) {
+    const b = bottoms(cv, g);
+    for (let y = 0; y < cv.h; y++) for (let x = 0; x < cv.w; x++) {
+      if (!inHex(g, x, y)) continue;
+      let c = opt.top;
+      if (!inHex(g, x, y - 1)) c = x + 0.5 < g.x ? opt.rimLit : opt.rimShade;
+      else if (opt.bevel && !inHex(g, x, y - 2)) c = x + 0.5 < g.x ? opt.bevel : opt.top;
+      cv.set(x, y, c);
+      cv.tag[y * cv.w + x] = 1; // face
+    }
+    for (let x = 0; x < cv.w; x++) {
+      if (b[x] < 0) continue;
+      const lit = x + 0.5 < g.x;
+      for (let d = 1; d <= g.wall; d++) {
+        const y = b[x] + d;
+        let c = opt.band(d, lit, x);
+        if (opt.crease && Math.abs(x + 0.5 - g.x) < 0.6 && d > 1) c = opt.crease;
+        cv.set(x, y, c);
+      }
+    }
+    return b;
+  }
+  function shadow(cv, g, cx, cy, rx, ry, map) {
+    for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+      if (((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 > 1 || !cv.tag[y * cv.w + x]) continue;
+      const c = cv.get(x, y); if (map[c]) cv.set(x, y, map[c]);
+    }
+  }
+  const SHADE = { [C.grass]: C.leaf, [C.lime]: C.grass, [C.leaf]: C.pine, [C.glow]: C.lime };
+
+  // The grove's layout, shared by every style: three oaks, a bush, a log, flowers, tufts, one mushroom.
+  // Trunk bases sit well inside the hex so the tile edge stays visible all the way round.
+  const TREES = [[48, 58, 0.72], [29, 68, 0.8], [67, 66, 0.82], [45, 80, 1.0]]; // [baseX, baseY, size], drawn back to front
+  const BUSH = [63, 82], LOG = [20, 72], TUFTS = [[32, 80], [52, 84], [72, 78], [22, 70]];
+  const FLOWERS = [[26, 79, 'rose'], [35, 81, 'cloud'], [70, 75, 'glow'], [76, 77, 'rose'], [47, 85, 'cloud']];
+  const MUSH = [74, 74];
+
+  // ---------- shared small sprites, drawn by hand ----------
+  const SPR = {
+    log: { rows: ['.oo.......', 'occoooooo.', 'cyscCCCCCo', 'occoSSSSSo', '.oooBBBBo.', '....oooo..'], legend: (o) => ({ o, C: C.clay, S: C.soil, B: C.bark, y: C.glow, s: C.soil, c: C.clay }) },
+    tuft: { rows: ['l...l', '.l.g.', '.ggG.'], legend: () => ({ l: C.lime, g: C.grass, G: C.leaf }) },
+    mush: { rows: ['.rrr.', 'rwrrr', 'rrrwk', '.kpk.', '..p..'], legend: (o) => ({ r: C.rose, w: C.cloud, k: o, p: C.pale }) },
+    flower: (c) => ({ rows: ['.p.', 'pyp', '.p.', '.e.'], legend: { p: C[c], y: c === 'glow' ? C.lime : C.glow, e: C.leaf } }),
+  };
+  // Every hand-placed detail must sit on the tile's top face. Count any pixel that would land on the wall or off the tile.
+  function offTile(g) {
+    let n = 0;
+    const check = (x0, y0, rows) => rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== '.' && !inHex(g, x0 + x, y0 + y)) n++; }));
+    TUFTS.forEach(([x, y]) => check(x - 2, y - 2, SPR.tuft.rows));
+    FLOWERS.forEach(([x, y, c]) => check(x - 1, y - 2, SPR.flower(c).rows));
+    check(LOG[0], LOG[1], SPR.log.rows);
+    check(MUSH[0] - 2, MUSH[1] - 4, SPR.mush.rows);
+    TREES.forEach(([x, y]) => { if (!inHex(g, x, y + 1)) n++; });
+    return n;
+  }
+  // A detail painted over a tree would break depth (everything here stands behind the trees in front of it),
+  // so count any detail pixel that would cover something other than open ground.
+  let covered = 0;
+  const GROUND = new Set([C.grass, C.lime, C.leaf, C.pine]);
+  function guard(cv, x0, y0, rows) { rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== '.' && !GROUND.has(cv.get(x0 + x, y0 + y))) covered++; })); }
+  function details(cv, ink) {
+    covered = 0;
+    TUFTS.forEach(([x, y]) => guard(cv, x - 2, y - 2, SPR.tuft.rows));
+    FLOWERS.forEach(([x, y, c]) => guard(cv, x - 1, y - 2, SPR.flower(c).rows));
+    guard(cv, LOG[0], LOG[1], SPR.log.rows);
+    guard(cv, MUSH[0] - 2, MUSH[1] - 4, SPR.mush.rows);
+    TUFTS.forEach(([x, y]) => cv.sprite(x - 2, y - 2, SPR.tuft.rows, SPR.tuft.legend()));
+    FLOWERS.forEach(([x, y, c]) => { const f = SPR.flower(c); cv.sprite(x - 1, y - 2, f.rows, f.legend); });
+    cv.sprite(LOG[0], LOG[1], SPR.log.rows, SPR.log.legend(ink));
+    cv.sprite(MUSH[0] - 2, MUSH[1] - 4, SPR.mush.rows, SPR.mush.legend(ink));
+  }
+
+  // ---------- crown techniques ----------
+  // Clumps for an oak of size s whose crown centre is (cx, cy). Back clumps first, so front clumps overlap them.
+  const oakClumps = (cx, cy, s) => [[0, -6, 6.5], [-6, -1, 6], [6, -2, 6], [-3, 3, 6.5], [4, 4, 6]].map(([x, y, r]) => [cx + x * s, cy + y * s, r * s]);
+  const disc = (dx, dy, r) => dx * dx + dy * dy <= r * r + r * 0.6;
+
+  // Tone for a crown pixel: one big light mass for the whole crown (so it reads as one tree), plus a little
+  // of each clump's own roundness. Light comes from the upper left.
+  const lightAt = (px, py, cx, cy, R, qx, qy, r) => (-(px - cx) * 0.62 - (py - cy) * 0.78) / R + 0.35 * (-(px - qx) * 0.62 - (py - qy) * 0.78) / r;
+  const DOWN = (t) => ({ [t.h]: t.l, [t.l]: t.m, [t.m]: t.d, [t.d]: t.o2 });
+
+  // 1 Clean Cluster: one light mass across the crown; each clump gets a thin dark crescent on its lower-right
+  // rim, which is what separates the leaf clusters. Selective outline goes on afterwards.
+  function crownBands(cv, clumps, t, cx0, cy0, R) {
+    const dn = DOWN(t);
+    clumps.slice().sort((a, b) => a[1] - b[1]).forEach(([qx, qy, r]) => {
+      for (let y = Math.floor(qy - r - 1); y <= qy + r + 1; y++) for (let x = Math.floor(qx - r - 1); x <= qx + r + 1; x++) {
+        const px = x + 0.5, py = y + 0.5;
+        if (!disc(px - qx, py - qy, r)) continue;
+        const v = lightAt(px, py, cx0, cy0, R, qx, qy, r);
+        let c = v > 0.95 ? t.h : v > 0.35 ? t.l : v > -0.35 ? t.m : t.d;
+        if (!disc(px - (qx - 0.22 * r), py - (qy - 0.28 * r), 0.9 * r)) c = dn[c] || c;
+        cv.set(x, y, c);
+      }
+    });
+  }
+  // 2 Bold Cartoon: three flat tones from the same light mass, each front clump's top edge drawn as a dark arc,
+  // and a solid ink line around the outside only.
+  function crownInk(cv, clumps, t, cx0, cy0, R) {
+    const sorted = clumps.slice().sort((a, b) => a[1] - b[1]);
+    const owner = new Map();
+    sorted.forEach(([qx, qy, r], k) => {
+      for (let y = Math.floor(qy - r - 1); y <= qy + r + 1; y++) for (let x = Math.floor(qx - r - 1); x <= qx + r + 1; x++) {
+        const px = x + 0.5, py = y + 0.5;
+        if (!disc(px - qx, py - qy, r)) continue;
+        const v = lightAt(px, py, cx0, cy0, R, qx, qy, r);
+        cv.set(x, y, v > 0.4 ? t.l : v > -0.4 ? t.m : t.d);
+        owner.set(y * cv.w + x, k);
+      }
+    });
+    owner.forEach((k, i) => { // seams: a pixel whose upper neighbour belongs to a clump further back
+      const up = owner.get(i - cv.w);
+      if (up !== undefined && up < k && sorted[k][1] - sorted[up][1] > 2) cv.px[i] = t.d;
+    });
+  }
+  // 6 Leafy Cluster: Clean Cluster's structure with three fixes from its review. The silhouette is lobed like leaf
+  // clusters instead of smooth circles, each clump is shaded mostly on its own so no diagonal banding runs across
+  // the crown, and highlights come as small two-pixel leaf marks instead of a soft blob.
+  const lobed = (dx, dy, r) => {
+    const a = Math.atan2(dy, dx), lobes = Math.max(5, Math.round(r * 1.1));
+    const edge = r + 0.9 * Math.max(0, Math.cos(a * lobes)) - 0.3;
+    return dx * dx + dy * dy <= edge * edge;
+  };
+  function crownLeafy(cv, clumps, t, cx0, cy0, R) {
+    const sorted = clumps.slice().sort((a, b) => a[1] - b[1]);
+    sorted.forEach(([qx, qy, r]) => {
+      for (let y = Math.floor(qy - r - 2); y <= qy + r + 2; y++) for (let x = Math.floor(qx - r - 2); x <= qx + r + 2; x++) {
+        const px = x + 0.5, py = y + 0.5;
+        if (!lobed(px - qx, py - qy, r)) continue;
+        const v = 0.45 * (-(px - cx0) * 0.62 - (py - cy0) * 0.78) / R + 0.8 * (-(px - qx) * 0.62 - (py - qy) * 0.78) / r;
+        let c = v > 0.45 ? t.l : v > -0.2 ? t.m : v > -0.65 ? t.d : t.o2;
+        if (!disc(px - (qx - 0.25 * r), py - (qy - 0.3 * r), 0.86 * r) && c !== t.o2) c = c === t.l ? t.m : t.d; // clump crescent
+        cv.set(x, y, c);
+      }
+    });
+    // leaf marks: little two-pixel strokes on the sunlit side of each clump
+    sorted.forEach(([qx, qy, r], k) => {
+      for (const [ox, oy] of [[-0.45, -0.45], [-0.05, -0.62], [-0.62, -0.05]]) {
+        const x = Math.round(qx + ox * r), y = Math.round(qy + oy * r);
+        if (cv.get(x, y) === t.l && cv.get(x + 1, y) === t.l) { cv.set(x, y, t.h); cv.set(x + 1, y, t.h); cv.set(x, y + 1, t.l); }
+      }
+    });
+  }
+
+  // 4 Faceted: the crown is a cut gem. Six flat facets around an apex nudged toward the light, plus a top plane.
+  function crownGem(cv, cx, cy, r, t) {
+    const ax = cx - 0.22 * r, ay = cy - 0.28 * r;
+    const pts = []; for (let k = 0; k < 7; k++) { const a = -Math.PI / 2 + (k / 7) * Math.PI * 2; pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.92]); }
+    const inPoly = (P, x, y) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; };
+    const top = pts.map(([x, y]) => [ax + (x - cx) * 0.42, ay + (y - cy) * 0.42]);
+    for (let y = Math.floor(cy - r - 1); y <= cy + r + 1; y++) for (let x = Math.floor(cx - r - 1); x <= cx + r + 1; x++) {
+      const px = x + 0.5, py = y + 0.5;
+      if (!inPoly(pts, px, py)) continue;
+      let c;
+      if (inPoly(top, px, py)) c = t.h;
+      else {
+        let k = Math.floor(((Math.atan2(py - ay, px - ax) + Math.PI / 2 + Math.PI * 4) % (Math.PI * 2)) / (Math.PI * 2 / 7));
+        const a = -Math.PI / 2 + (k + 0.5) * (Math.PI * 2 / 7);
+        const l = -0.6 * Math.cos(a) - 0.8 * Math.sin(a);
+        c = l > 0.45 ? t.l : l > -0.1 ? t.m : l > -0.6 ? t.d : t.o;
+      }
+      cv.set(x, y, c);
+    }
+  }
+  // 5 Hi-bit Leaves: a dark silhouette covered in small hand-drawn leaf stamps, toned by where they face the light.
+  const LEAF = ['..a..', '.aab.', 'abbbc', '.bcc.'];
+  function crownLeaves(cv, clumps, cx, cy, R, t) {
+    const inside = (x, y) => clumps.some(([qx, qy, r]) => disc(x + 0.5 - qx, y + 0.5 - qy, r));
+    for (let y = 0; y < cv.h; y++) for (let x = 0; x < cv.w; x++) if (inside(x, y)) cv.set(x, y, t.d);
+    for (let row = 0, y = Math.floor(cy - R - 2); y < cy + R + 2; y += 3, row++) {
+      for (let x = Math.floor(cx - R - 3) + (row % 2) * 2; x < cx + R + 2; x += 4) {
+        const sx = Math.round(x), sy = y;
+        if (!inside(sx + 2, sy) || !inside(sx, sy + 2) || !inside(sx + 4, sy + 2) || !inside(sx + 2, sy + 3)) continue;
+        const v = (-(sx + 2 - cx) * 0.6 - (sy + 2 - cy) * 0.8) / R;
+        const tone = v > 0.45 ? [t.h, t.l, t.m] : v > 0.05 ? [t.l, t.m, t.d] : v > -0.4 ? [t.m, t.d, t.o2] : [t.d, t.o2, t.o];
+        cv.sprite(sx, sy, LEAF, { a: tone[0], b: tone[1], c: tone[2] });
+      }
+    }
+  }
+
+  const TONE = { o: C.deep, o2: C.pine, d: C.leaf, m: C.grass, l: C.lime, h: C.glow };
+  function trunk(cv, x, y, h, cols) { for (let k = 0; k <= h; k++) cols.forEach((c, i) => cv.set(x - 1 + i, y - k, c)); }
+
+  // Strata used by most styles: grass lip with drips, topsoil, soil with a clay band on the lit face.
+  const strata = (wall) => (d, lit, x) => {
+    if (d === 1) return lit ? C.grass : C.leaf;
+    if (d === 2 && x % 7 === 3) return lit ? C.grass : C.leaf; // drips at a fixed rhythm
+    if (d <= 3) return C.bark;
+    if (d === wall) return C.deep;
+    if (d === 6) return lit ? C.clay : C.bark;
+    return lit ? C.soil : C.bark;
+  };
+
+  const STYLES = [
+    {
+      id: 'leafy', name: 'Leafy Cluster', tag: 'Recommended', s: 1, pick: true,
+      blurb: 'Clean Cluster with its three review problems fixed. Crown edges are lobed like real leaf clusters, each clump is shaded on its own so no banding cuts across the crown, and the highlights are small leaf strokes.',
+      draw(cv) {
+        const g = hexGeom(1);
+        tile(cv, g, { top: C.grass, rimLit: C.lime, rimShade: C.grass, bevel: C.lime, band: strata(g.wall), crease: C.bark });
+        TREES.forEach(([x, y, s]) => shadow(cv, g, x + 5 * s, y + 1, 10 * s, 3.2 * s, SHADE));
+        shadow(cv, g, BUSH[0] + 3, BUSH[1] + 1, 6, 2, SHADE);
+        TREES.forEach(([x, y, s]) => cv.outlined(() => {
+          trunk(cv, x, y, Math.round(9 * s), [C.clay, C.soil, C.bark]);
+          cv.set(x - 2, y, C.soil); cv.set(x + 2, y, C.bark);
+          cv.set(x - 2, y - Math.round(9 * s), C.soil); cv.set(x + 2, y - Math.round(8 * s), C.bark); // branches fork into the crown
+          crownLeafy(cv, oakClumps(x, y - 15 * s, s), TONE, x, y - 15 * s, 12 * s);
+        }, C.pine, C.deep));
+        cv.outlined(() => crownLeafy(cv, [[BUSH[0] - 3, BUSH[1] - 3, 3.6], [BUSH[0] + 3, BUSH[1] - 3, 3.6], [BUSH[0], BUSH[1] - 5, 3.8]], TONE, BUSH[0], BUSH[1] - 4, 6), C.pine, C.deep);
+        return { cleanupAfter: true, ink: C.bark };
+      },
+    },
+    {
+      id: 'cluster', name: 'Clean Cluster', tag: 'Modern indie', s: 1,
+      blurb: 'Each crown is five clumps, and each clump has the same four bands: a dark crescent away from the sun, a mid body, a light cap and one highlight. A selective outline goes darkest on the shade side.',
+      draw(cv) {
+        const g = hexGeom(1);
+        tile(cv, g, { top: C.grass, rimLit: C.lime, rimShade: C.grass, bevel: C.lime, band: strata(g.wall), crease: C.bark });
+        TREES.forEach(([x, y, s]) => shadow(cv, g, x + 5 * s, y + 1, 10 * s, 3.2 * s, SHADE));
+        shadow(cv, g, BUSH[0] + 3, BUSH[1] + 1, 6, 2, SHADE);
+        TREES.forEach(([x, y, s]) => cv.outlined(() => {
+          trunk(cv, x, y, Math.round(8 * s), [C.clay, C.soil, C.bark]);
+          cv.set(x - 2, y, C.soil); cv.set(x + 2, y, C.bark);
+          crownBands(cv, oakClumps(x, y - 15 * s, s), TONE, x, y - 15 * s, 12 * s);
+        }, C.pine, C.deep));
+        cv.outlined(() => crownBands(cv, [[BUSH[0] - 3, BUSH[1] - 3, 3.6], [BUSH[0] + 3, BUSH[1] - 3, 3.6], [BUSH[0], BUSH[1] - 5, 3.8]], TONE, BUSH[0], BUSH[1] - 4, 6), C.pine, C.deep);
+        return { cleanupAfter: true, ink: C.bark };
+      },
+    },
+    {
+      id: 'cartoon', name: 'Bold Cartoon', tag: 'Adventure-game tiles', s: 1,
+      blurb: 'Flat fills with one highlight and a solid ink line around every clump, trunk and tile edge. It gives up subtle shading for silhouettes that read instantly at any size.',
+      draw(cv) {
+        const g = hexGeom(1);
+        const band = (d, lit) => (d === 1 ? (lit ? C.grass : C.leaf) : d === g.wall ? C.ink : d <= 3 ? C.bark : lit ? C.soil : C.bark);
+        tile(cv, g, { top: C.grass, rimLit: C.lime, rimShade: C.grass, band, crease: C.ink });
+        TREES.forEach(([x, y, s]) => shadow(cv, g, x + 5 * s, y + 1, 10 * s, 3.2 * s, SHADE));
+        TREES.forEach(([x, y, s]) => {
+          cv.outlined(() => trunk(cv, x, y, Math.round(8 * s), [C.clay, C.soil, C.bark]), C.ink, C.ink);
+          cv.outlined(() => crownInk(cv, oakClumps(x, y - 15 * s, s), { d: C.leaf, m: C.grass, l: C.lime }, x, y - 15 * s, 12 * s), C.ink, C.ink);
+        });
+        cv.outlined(() => crownInk(cv, [[BUSH[0] - 3, BUSH[1] - 3, 3.8], [BUSH[0] + 3, BUSH[1] - 3, 3.8], [BUSH[0], BUSH[1] - 5, 4]], { d: C.leaf, m: C.grass, l: C.lime }, BUSH[0], BUSH[1] - 4, 6), C.ink, C.ink);
+        // ink around the whole tile
+        const src = cv.px.slice();
+        for (let y = 1; y < cv.h - 1; y++) for (let x = 1; x < cv.w - 1; x++) {
+          if (src[y * cv.w + x]) continue;
+          if (src[(y - 1) * cv.w + x] || src[(y + 1) * cv.w + x] || src[y * cv.w + x - 1] || src[y * cv.w + x + 1]) cv.set(x, y, C.ink);
+        }
+        return { cleanupAfter: true, ink: C.ink };
+      },
+    },
+    {
+      id: 'chunky', name: 'Chunky Token', tag: 'Board-game icon', s: 0.5,
+      blurb: 'Half the resolution, so every pixel is doubled. Each tree is one round crown on a short trunk in three tones with a full dark outline, built to read as a map token at a glance.',
+      draw(cv) {
+        const g = hexGeom(0.5);
+        const band = (d, lit) => (d === 1 ? (lit ? C.grass : C.leaf) : d === g.wall ? C.deep : lit ? C.soil : C.bark);
+        tile(cv, g, { top: C.grass, rimLit: C.lime, rimShade: C.grass, band });
+        const T = TREES.map(([x, y, s]) => [x / 2, y / 2, s]);
+        T.forEach(([x, y, s]) => shadow(cv, g, x + 2.5 * s, y + 0.5, 5 * s, 1.6, SHADE));
+        T.forEach(([x, y, s]) => cv.outlined(() => {
+          for (let k = 0; k <= 3; k++) { cv.set(x - 0.5, y - k, C.soil); cv.set(x + 0.5, y - k, C.bark); }
+          crownBands(cv, [[x, y - 8 * s, 5.2 * s]], TONE, x, y - 8 * s, 5.2 * s);
+        }, C.deep, C.deep));
+        cv.outlined(() => crownBands(cv, [[BUSH[0] / 2, BUSH[1] / 2 - 2, 2.6]], TONE, BUSH[0] / 2, BUSH[1] / 2 - 2, 2.6), C.deep, C.deep);
+        cv.sprite(LOG[0] / 2, LOG[1] / 2, ['oooooo', 'oCCCyo', 'oooooo'], { o: C.bark, C: C.clay, y: C.glow });
+        return { cleanupAfter: true, noDetails: true };
+      },
+    },
+    {
+      id: 'faceted', name: 'Faceted Gem', tag: 'Low-poly pixel', s: 1,
+      blurb: 'Crowns are cut like gems: seven flat facets around an apex nudged toward the sun, with a bright top plane. There are no outlines, only hard value changes, matching the angular boulders.',
+      draw(cv) {
+        const g = hexGeom(1);
+        const band = (d, lit) => (d === 1 ? (lit ? C.lime : C.leaf) : d === g.wall ? C.deep : lit ? (d < 6 ? C.clay : C.soil) : (d < 6 ? C.soil : C.bark));
+        tile(cv, g, { top: C.grass, rimLit: C.lime, rimShade: C.grass, band });
+        TREES.forEach(([x, y, s]) => shadow(cv, g, x + 5 * s, y + 1, 10 * s, 3.2 * s, SHADE));
+        TREES.forEach(([x, y, s]) => {
+          trunk(cv, x, y, Math.round(8 * s), [C.clay, C.soil, C.bark]);
+          crownGem(cv, x, y - 15 * s, 12 * s, { o: C.pine, d: C.leaf, m: C.grass, l: C.lime, h: C.glow });
+        });
+        crownGem(cv, BUSH[0], BUSH[1] - 4, 5, { o: C.pine, d: C.leaf, m: C.grass, l: C.lime, h: C.lime });
+        return { cleanupAfter: true, ink: C.bark };
+      },
+    },
+    {
+      id: 'hibit', name: 'Hi-bit Leaves', tag: 'Detailed 16-bit', s: 1,
+      blurb: 'A dark crown silhouette covered in small hand-drawn leaf stamps, row over row like scales. Each stamp takes a tone set by where it faces the light, giving leaf texture without random noise.',
+      draw(cv) {
+        const g = hexGeom(1);
+        tile(cv, g, { top: C.grass, rimLit: C.lime, rimShade: C.grass, bevel: C.lime, band: strata(g.wall), crease: C.bark });
+        [[33, 90], [58, 92], [70, 86]].forEach(([x, y]) => cv.sprite(x, y, ['pS', 'SS'], { p: C.pale, S: C.stone })); // stones set in the wall
+        TREES.forEach(([x, y, s]) => shadow(cv, g, x + 5 * s, y + 1, 10 * s, 3.2 * s, SHADE));
+        TREES.forEach(([x, y, s]) => cv.outlined(() => {
+          trunk(cv, x, y, Math.round(8 * s), [C.clay, C.soil, C.bark]);
+          for (let k = 2; k < 8 * s; k += 3) cv.set(x, y - k, C.bark); // bark lines
+          cv.set(x - 2, y, C.soil); cv.set(x + 2, y, C.bark);
+          crownLeaves(cv, oakClumps(x, y - 15 * s, s), x, y - 15 * s, 12 * s, { ...TONE });
+        }, C.pine, C.deep));
+        cv.outlined(() => crownLeaves(cv, [[BUSH[0] - 3, BUSH[1] - 3, 3.6], [BUSH[0] + 3, BUSH[1] - 3, 3.6], [BUSH[0], BUSH[1] - 5, 3.8]], BUSH[0], BUSH[1] - 4, 6, TONE), C.pine, C.deep);
+        return { cleanupAfter: true, ink: C.bark };
+      },
+    },
+  ];
+
+  const list = STYLES.map((st) => {
+    const lo = st.s < 1;
+    const cv = new Cv(lo ? 48 : 96, lo ? 56 : 112);
+    const r = st.draw(cv);
+    const before = orphans(cv);
+    const fixed = r.cleanupAfter ? cleanup(cv) : 0;
+    const after = orphans(cv); // measured before the hand-drawn details, whose single-pixel flower hearts are intended
+    if (!r.noDetails) details(cv, r.ink);
+    // scale the low-res style up so every style shows at the same size
+    let px = cv.px;
+    if (lo) { px = new Array(96 * 112).fill(null); for (let y = 0; y < 112; y++) for (let x = 0; x < 96; x++) px[y * 96 + x] = cv.px[(y >> 1) * 48 + (x >> 1)]; }
+    const colors = new Set(px.filter(Boolean)).size;
+    // how much of the tile's top rim is still visible (the hex must stay readable as a hex)
+    const g = hexGeom(st.s); let rim = 0, rimShown = 0;
+    for (let y = 0; y < cv.h; y++) for (let x = 0; x < cv.w; x++) if (inHex(g, x, y) && !inHex(g, x, y - 1)) { rim++; const c = cv.get(x, y); if (c === C.lime || c === C.grass) rimShown++; }
+    return { ...st, w: 96, h: 112, px, metrics: { offTile: r.noDetails ? 0 : offTile(hexGeom(1)), overTrees: r.noDetails ? 0 : covered, strayBefore: before, strayFixed: fixed, strayAfter: after, colors, rimVisible: Math.round((rimShown / rim) * 100) } };
+  });
+  list.countStray = (px, w, h) => orphans(Object.assign(new Cv(w, h), { px }));
+  return list;
+}
+
+(() => {
+  const S = buildVerdantIsle();
+  const R = buildGroveRedraws();
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const BOARD = hex('#a9d5f0');
+  function paint(canvas, px, w, h, scale, y0 = 0) { // y0 trims empty sky above the art
+    canvas.width = w * scale; canvas.height = (h - y0) * scale;
+    const cx = canvas.getContext('2d'), im = cx.createImageData(canvas.width, canvas.height);
+    const cache = new Map();
+    for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
+      const v = px[(((y / scale) | 0) + y0) * w + ((x / scale) | 0)];
+      let c = BOARD; if (v) { if (!cache.has(v)) cache.set(v, hex(v)); c = cache.get(v); }
+      const o = (y * canvas.width + x) * 4; im.data[o] = c[0]; im.data[o + 1] = c[1]; im.data[o + 2] = c[2]; im.data[o + 3] = 255;
+    }
+    cx.putImageData(im, 0, 0);
+  }
+  // the current Grove, cropped to the same 96x112 board, centred the same way
+  const buf = S.renderTile(0, 7, 3.3), box = S.tileBox(0);
+  const ow = 96, oh = 112, ox = box.x - 8, oy = box.y - 4, old = new Array(ow * oh).fill(null);
+  for (let y = 0; y < oh; y++) for (let x = 0; x < ow; x++) {
+    const sx = ox + x, sy = oy + y;
+    if (sx < 0 || sy < 0 || sx >= S.W || sy >= S.H) continue;
+    const v = buf[sy * S.W + sx]; if (v !== 255) old[y * ow + x] = S.PAL[v];
+  }
+  document.getElementById('oldStray').textContent = R.countStray(old, ow, oh);
+  paint(document.getElementById('old'), old, ow, oh, 3);
+  paint(document.getElementById('cmpOld'), old, ow, oh, 5);
+  paint(document.getElementById('cmpNew'), R.find((s) => s.id === 'leafy').px, 96, 112, 5, 4);
+
+  const CHECK = ['Reads as a hex tile', 'Reads as a grove', 'Trees look like trees', 'One clear light direction', 'Clean pixels, no noise', 'Works for every tile'];
+  const VERDICT = {
+    leafy:   [['pass'], ['pass'], ['pass', 'lobed crowns, trunks, branch forks'], ['pass'], ['pass'], ['pass', 'same rules fit pines and bushes']],
+    cluster: [['pass'], ['pass'], ['part', 'smooth pillow crowns'], ['part', 'diagonal banding across crowns'], ['pass'], ['pass']],
+    cartoon: [['pass'], ['pass'], ['pass'], ['pass'], ['pass'], ['part', 'heavy ink clashes with the outline-free backdrop']],
+    chunky:  [['part', 'only about a third of the rim shows'], ['part', 'reads as tokens, not a wood'], ['pass'], ['pass'], ['pass'], ['part', 'too coarse for flowers and mushrooms']],
+    faceted: [['pass'], ['part', 'reads as a stylized orchard'], ['part', 'gems read as broccoli'], ['pass'], ['pass'], ['part', 'needs its own pine and rock rules']],
+    hibit:   [['part', 'only about a third of the rim shows'], ['pass'], ['fail', 'pointed tops read as conifers'], ['pass'], ['part', 'stamp texture is busy'], ['pass']],
+  };
+  const LABEL = { pass: 'pass', part: 'partial', fail: 'fail' };
+  document.getElementById('styles').innerHTML = R.map((st) => {
+    const m = st.metrics;
+    return `<li class="${st.pick ? 'pick' : ''}"><div class="board"><canvas data-id="${st.id}" aria-label="Grove drawn in ${st.name} style"></canvas></div>
+      <div class="body"><span class="tag">${st.tag}</span><h3>${st.name}</h3><p>${st.blurb}</p>
+      <ul class="checks">${VERDICT[st.id].map(([v, note], i) => `<li><span class="v ${v}">${LABEL[v]}</span><span>${CHECK[i]}${note ? ` <small>· ${note}</small>` : ''}</span></li>`).join('')}</ul>
+      <div class="metrics"><span>stray px ${m.strayBefore} → ${m.strayAfter}</span><span>off tile ${m.offTile}</span><span>over trees ${m.overTrees}</span><span>rim shown ${m.rimVisible}%</span><span>${m.colors} colors</span></div></div></li>`;
+  }).join('');
+  document.querySelectorAll('#styles canvas').forEach((c) => paint(c, R.find((s) => s.id === c.dataset.id).px, 96, 112, 3, 26));
+})();
+</script>

@@ -1,0 +1,24 @@
+{
+  "tileWidth": 32,
+  "tileHeight": 48,
+  "faceTop": 16,
+  "faceWidth": 32,
+  "faceHeight": 28,
+  "order": [
+    "grass",
+    "meadow",
+    "grove",
+    "pines",
+    "forest",
+    "pond",
+    "lake",
+    "rocks",
+    "hills",
+    "desert",
+    "tundra",
+    "swamp",
+    "river",
+    "mountains",
+    "beach"
+  ]
+}

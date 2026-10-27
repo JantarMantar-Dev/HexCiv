@@ -1,0 +1,309 @@
+<title>Verdant Isle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+/* Layout: one big pixel stage, a build-step scrubber under it, then palette, tile key and tutorial notes.
+   Single committed look taken from the scene's own palette: deep teal ground, pine panels, cloud lettering, lime accent. */
+:root {
+  color-scheme: dark;
+  --bg: #11222e; --panel: #1a3445; --line: #23584c; --fg: #f4f6ea; --muted: #a3b5c4;
+  --accent: #9bcb3e; --glow: #e6e773; --rose: #e8587d;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+html, body { height: auto; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-block: 22px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+.wrap > * { min-width: 0; }
+header { display: grid; gap: 6px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 6vw, 46px); line-height: 1; margin: 0; color: var(--accent); letter-spacing: 0.02em; text-wrap: balance; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: var(--mono); font-size: 12px; color: var(--bg); background: var(--glow); padding: 2px 8px; }
+.chip.alt { background: var(--line); color: var(--fg); }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 68ch; }
+.stage { position: relative; justify-self: center; max-width: 100%; line-height: 0; border: 4px solid #0b1820; box-shadow: 0 0 0 1px var(--line); }
+.stage canvas { display: block; max-width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; }
+.stage.crt canvas { filter: saturate(1.12) contrast(1.05) drop-shadow(1px 0 0 rgba(232, 88, 125, 0.28)) drop-shadow(-1px 0 0 rgba(95, 158, 221, 0.3)); }
+.scan { position: absolute; inset: 0; pointer-events: none; display: none; border-radius: 6px;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 62%, rgba(4,12,18,0.32) 62%, rgba(4,12,18,0.32) 100%) 0 0 / 100% calc(100% / 192),
+              radial-gradient(ellipse at center, rgba(0,0,0,0) 62%, rgba(4,12,18,0.5) 100%); }
+.stage.crt .scan { display: block; }
+.labels span { position: absolute; transform: translate(-50%, -50%); font-family: var(--display); font-size: clamp(10px, 1.6vw, 14px); line-height: 1.2; color: var(--fg); background: rgba(17, 34, 46, 0.82); padding: 2px 6px; white-space: nowrap; pointer-events: none; }
+.labels span b { color: var(--glow); font-weight: 700; margin-right: 4px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; }
+.scrub { display: flex; align-items: center; gap: 10px; flex: 1 1 320px; min-width: 0; }
+.scrub label { font-family: var(--display); font-size: 14px; color: var(--muted); white-space: nowrap; }
+.scrub input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.scrub output { font-family: var(--mono); font-size: 13px; color: var(--fg); min-width: 0; font-variant-numeric: tabular-nums; }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.toggles label { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); cursor: pointer; }
+.toggles input { accent-color: var(--accent); }
+.btn { font-family: var(--display); font-size: 14px; background: var(--accent); color: var(--bg); border: 0; padding: 6px 12px; cursor: pointer; }
+.btn:hover { background: var(--glow); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+h2 { font-family: var(--display); font-weight: 500; font-size: 22px; margin: 10px 0 0; color: var(--fg); }
+.grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+.grid > section { min-width: 0; display: grid; gap: 10px; }
+.palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.sw { display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px; align-items: center; font-size: 13px; }
+.sw i { grid-row: span 2; width: 22px; height: 22px; display: block; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+.sw b { font-weight: 600; }
+.sw code { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.tiles { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.tiles li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; background: var(--panel); border: 1px solid var(--line); padding: 10px 12px; }
+.tiles .hexmark { width: 30px; height: 34px; background: var(--accent); color: var(--bg); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); display: grid; place-items: center; font-family: var(--display); font-weight: 700; }
+.tiles strong { font-family: var(--display); font-weight: 500; font-size: 16px; }
+.tiles p { margin: 0; color: var(--muted); font-size: 14px; }
+.notes { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--display); font-weight: 500; color: var(--glow); font-size: 14px; }
+td:first-child { color: var(--fg); width: 38%; }
+td:last-child { color: var(--muted); }
+.builds { display: grid; gap: 14px; }
+.builds-head { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; }
+.builds-head p { margin: 0; color: var(--muted); max-width: 56ch; flex: 1 1 280px; }
+.picker { display: grid; grid-template-columns: repeat(6, 42px); grid-auto-rows: 36px; gap: 0 4px; }
+.picker button { grid-column: span 2; width: 88px; height: 50px; border: 0; padding: 0; cursor: pointer; background: var(--line); color: var(--fg);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); font-family: var(--display); font-size: 13px; line-height: 1.05; }
+.picker button b { display: block; font-size: 15px; color: var(--glow); }
+.picker button:hover { background: #2f7d46; }
+.picker button[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+.picker button[aria-pressed="true"] b { color: var(--bg); }
+.picker .back1 { grid-column: 2 / span 2; } .picker .back2 { grid-column: 4 / span 2; }
+.picker .front { grid-row: 2; margin-top: 0; }
+.splits { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+.splits li { background: var(--panel); border: 1px solid var(--line); display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+.splits canvas { width: 100%; height: auto; display: block; image-rendering: pixelated; image-rendering: crisp-edges; background: #142a37; }
+.splits div { padding: 8px 10px 10px; display: grid; gap: 3px; }
+.splits strong { font-family: var(--display); font-weight: 500; font-size: 15px; }
+.splits strong span { color: var(--glow); margin-right: 6px; }
+.splits p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.splits li.final { border-color: var(--accent); }
+.review { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); background: var(--panel); border: 1px solid var(--line); padding: 14px; }
+.review h3 { grid-column: 1 / -1; margin: 0; font-family: var(--display); font-weight: 500; font-size: 18px; color: var(--glow); }
+.rv { display: grid; gap: 4px; min-width: 0; padding: 10px 12px; background: var(--bg); }
+.rv strong { font-size: 14px; }
+.rv p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.tag { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 0 6px; margin-right: 6px; color: var(--bg); }
+.tag.pass { background: var(--accent); } .tag.fail { background: var(--rose); } .tag.partial { background: var(--glow); }
+footer { color: var(--muted); font-size: 13px; }
+footer a { color: var(--accent); }
+@media (max-width: 720px) { .splits { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .scrub { flex-basis: 100%; flex-wrap: wrap; } .scrub input { flex-basis: 100%; order: 3; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Verdant Isle</h1>
+    <div class="chips"><span class="chip">256 × 192 px</span><span class="chip">16 colors</span><span class="chip alt">5 hex tiles</span><span class="chip alt">light from upper left</span></div>
+    <p>A floating island of five hex tiles over a green valley: grove, pines, pond, meadow and mossy rocks. Every pixel is painted from one 16-color palette using the layering and color rules from Slynyrd's landscape backgrounds tutorial. Scrub the build steps to watch it come together layer by layer, or pick a tile below to see how it was built.</p>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="cv" width="256" height="192" aria-label="Pixel art of five hex tiles on a floating island over a valley"></canvas>
+    <div class="labels" id="labels" hidden></div>
+    <div class="scan"></div>
+  </div>
+
+  <div class="controls">
+    <div class="scrub">
+      <label for="step">Build step</label>
+      <input type="range" id="step" min="1" max="10" value="10">
+      <output id="stepName" for="step">10 · Life</output>
+    </div>
+    <div class="toggles">
+      <button class="btn" id="replay" type="button">Replay build</button>
+      <label><input type="checkbox" id="anim" checked> Animate</label>
+      <label><input type="checkbox" id="crt"> CRT</label>
+      <label><input type="checkbox" id="lbl"> Tile labels</label>
+    </div>
+  </div>
+
+  <section class="builds" id="builds">
+    <h2>How each tile was built</h2>
+    <div class="builds-head">
+      <div class="picker" id="picker" role="group" aria-label="Choose a tile"></div>
+      <p>Pick a tile, or click one on the scene above. Each panel adds one layer, the same back-to-front way the tutorial paints: shape, sides, texture, ground, props in two values, full shading, small details, then the tile in place.</p>
+    </div>
+    <ol class="splits" id="splits"></ol>
+    <div class="review" id="review" aria-live="polite"></div>
+  </section>
+
+  <div class="grid">
+    <section>
+      <h2>The tiles</h2>
+      <ul class="tiles" id="tiles">
+        <li><span class="hexmark">A</span><div><strong>Grove</strong><p>Five broadleaf oaks of different sizes under one shaded floor, with undergrowth, a fallen log and a fern. Each crown is built from overlapping leaf clumps lit from the top left.</p></div></li>
+        <li><span class="hexmark">B</span><div><strong>Pines</strong><p>A stand of six conifers on a needle-dark floor, cooler and darker than the oaks, with arched ferns at their roots.</p></div></li>
+        <li><span class="hexmark">C</span><div><strong>Pond</strong><p>The water reuses the sky colors, with a dark far bank, tree reflections, lily pads and a bloom, cattails, bank stones, and a channel that spills off the island as a waterfall.</p></div></li>
+        <li><span class="hexmark">D</span><div><strong>Meadow</strong><p>Poppies, daisies, buttercups and lupines grow in single-kind clumps on the brightest grass. A dirt path narrows as it climbs between the back tiles, and two butterflies drift overhead.</p></div></li>
+        <li><span class="hexmark">E</span><div><strong>Rocks</strong><p>Angular boulders with flat facets, moss caps and cracks, a berry bush, pebbles, and red-cap mushrooms with white spots.</p></div></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Palette</h2>
+      <div class="palette" id="palette"></div>
+      <p style="margin:0;color:var(--muted);font-size:14px">The sky top doubles as water and far mountain shadow. Mist covers the haze, the far mountains and the pond streaks. Shadows step down toward deep teal and never reach black.</p>
+    </section>
+  </div>
+
+  <section class="notes">
+    <h2>What the tutorial taught, and where it shows</h2>
+    <table>
+      <thead><tr><th>Tutorial rule</th><th>In this scene</th></tr></thead>
+      <tbody>
+        <tr><td>Fix a console-friendly 4:3 canvas and a hard color cap</td><td>256×192, which fits a 256×224 screen, and exactly 16 colors. The tutorial used 192×144 and 15 colors; five hexes needed the extra width.</td></tr>
+        <tr><td>Start with flat horizon bars, then split them into bands</td><td>Steps 1 and 2. Band edges blend with short horizontal streaks instead of dithering.</td></tr>
+        <tr><td>Depth through color: nearer is more saturated and contrasty, farther is lighter and bluer</td><td>The island holds the warmest greens and the darkest darks. The valley drops to sage and pine, and the mountains go blue.</td></tr>
+        <tr><td>Hue-shift toward the sky with distance</td><td>The grass ramp runs from deep teal through green and lime to warm yellow. Far planes take sage, then mist.</td></tr>
+        <tr><td>Two mountain layers, the near one darker and bluer than the grass, with a haze band at its foot</td><td>Steps 3 and 4. A forested near range with tree-crown bumps sits on a mist band over the valley.</td></tr>
+        <tr><td>Grass is 1px vertical streaks, scaled by distance</td><td>Front tiles get 3–4px blades, back tiles 1–2px clusters, the near valley short tufts, and the far valley none.</td></tr>
+        <tr><td>Consistency in clustering and scale</td><td>One noise field drives grass patches, flower clusters and leaf clumps, so they all clump the same way. Flowers are plus-shaped in front and single pixels in back.</td></tr>
+        <tr><td>Layered clouds: the nearest has the most detail, the far ones are baked into the gradient</td><td>Puffy near clouds drift among the far peaks. Far clouds are streaks inside the sky bands.</td></tr>
+        <tr><td>Shadows are a darker, bluer shift of the local hue</td><td>Every cast shadow steps each color down one notch in its own ramp. Rocks and the underside shade into blue-grey.</td></tr>
+        <tr><td>Clarity over detail, and every pixel should say something</td><td>Props get a one-pixel outline: the darkest tone on the shaded bottom and right edges, a softer dark on the lit edges, so each asset reads against the grass. Tile seams are a dark groove with a lit bevel.</td></tr>
+        <tr><td>Finish with a CRT pass at 4×</td><td>The CRT toggle adds scanlines on the art grid, a slight color fringe and a vignette.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>Technique source: <a href="https://www.slynyrd.com/blog/2026/5/27/pixelblog-62-landscape-backgrounds" target="_blank" rel="noopener">Pixelblog 62, Landscape Backgrounds</a> by Raymond Schlitter (Slynyrd). Scene generated in code, deterministic per pixel.</footer>
+</div>
+
+<script>
+/*SCENE*/
+(() => {
+  const S = buildVerdantIsle();
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const img = ctx.createImageData(S.W, S.H);
+  const rgb = S.PAL.map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
+  const stage = document.getElementById('stage');
+  const stepEl = document.getElementById('step'), stepName = document.getElementById('stepName');
+  const animEl = document.getElementById('anim'), crtEl = document.getElementById('crt'), lblEl = document.getElementById('lbl');
+  const labels = document.getElementById('labels');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) animEl.checked = false;
+
+  const ROLES = ['shadow', 'conifer', 'leaf', 'grass', 'lit grass', 'sun glint', 'far grass', 'bark', 'soil', 'clay', 'stone', 'rock light', 'sky, water', 'mist, haze', 'cloud', 'flower'];
+  document.getElementById('palette').innerHTML = S.PAL.map((c, i) =>
+    `<div class="sw"><i style="background:${c}"></i><b>${S.NAMES[i]}</b><code>${c} · ${ROLES[i]}</code></div>`).join('');
+  labels.innerHTML = S.HEX.map((h) => `<span style="left:${(h.x / S.W) * 100}%;top:${((h.y + (h.front ? 14 : -2)) / S.H) * 100}%"><b>${h.id}</b>${h.name}</span>`).join('');
+
+  let t = 3.3, last = performance.now(), acc = 0;
+  function draw() {
+    const buf = S.render(+stepEl.value, t), d = img.data;
+    for (let i = 0; i < buf.length; i++) { const c = rgb[buf[i]]; d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = 255; }
+    ctx.putImageData(img, 0, 0);
+  }
+  function fit() { // largest whole-number scale that fits, so every art pixel is the same size
+    const avail = stage.parentElement.clientWidth - 8;
+    const k = Math.max(1, Math.floor(avail / S.W));
+    cv.style.width = (avail / S.W < 2 ? avail : S.W * k) + 'px';
+  }
+  function label() { stepName.textContent = `${stepEl.value} · ${S.STEPS[stepEl.value - 1]}`; }
+  function loop(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (animEl.checked) { t += dt; acc += dt; if (acc > 1 / 12) { acc = 0; draw(); } }
+    requestAnimationFrame(loop);
+  }
+  let replayTimer = null;
+  document.getElementById('replay').addEventListener('click', () => {
+    clearInterval(replayTimer);
+    stepEl.value = 1; label(); draw();
+    replayTimer = setInterval(() => {
+      if (+stepEl.value >= S.STEPS.length) { clearInterval(replayTimer); return; }
+      stepEl.value = +stepEl.value + 1; label(); draw();
+    }, reduce ? 250 : 700);
+  });
+  stepEl.addEventListener('input', () => { clearInterval(replayTimer); label(); draw(); });
+  crtEl.addEventListener('change', () => stage.classList.toggle('crt', crtEl.checked));
+  lblEl.addEventListener('change', () => { labels.hidden = !lblEl.checked; });
+  animEl.addEventListener('change', draw);
+  addEventListener('resize', fit);
+
+  // ---- per-tile build views ----
+  const NOTE = {
+    1: () => 'Flat block-in. One grass color on top, two earth values for the sunlit and shaded sides, stone for the underside.',
+    2: () => 'Wall strata: a dripping grass lip, dark topsoil, and clay bands on the sunlit face only. A lime rim catches the light on the top-left edges.',
+    3: (h) => h.front ? 'Grass as 1px vertical streaks, 3 to 4px tall. This is the nearest scale, so blades are fully visible.' : 'Grass as 1 to 2px clusters. The tile sits farther back, so the blades shrink by one step, as the tutorial does with each plane.',
+    4: (h) => ({ A: 'No path or water here. The grove lays down one shared shaded floor and a cast shadow per tree, each stepping the grass one notch darker and bluer.',
+                 B: 'A needle-dark floor under the stand, then long, narrow pine shadows to the lower right, away from the sun.',
+                 C: 'The pond reuses the sky colors: a dark far bank, tree reflections and light streaks. A channel runs to the edge and drops off as a waterfall.',
+                 D: 'The dirt path narrows as it climbs. Clay lights its left edge, bark shades its right edge, and pebbles get smaller with distance.',
+                 E: 'Contact shadows go down first, where the boulders and the bush will sit.' })[h.id],
+    5: (h) => ({ A: 'Five oaks of different sizes, an undergrowth bush and a fallen log, in two values with outlines, to check silhouettes and light before shading.',
+                 B: 'Six conifers, tiers in two values: a lit left side and a shaded right side, each with a dark outline.',
+                 C: 'Lily pads, a bloom, four cattails and two bank stones, flattened to two values.',
+                 D: 'The meadow has no big props. All of its character comes from the details in step 7.',
+                 E: 'Angular boulders, the berry bush and a pebble in two values. The flat facets already read as stone.' })[h.id],
+    6: (h) => ({ A: 'Full ramp. Each clump is lit top-left with glow glints, each crown has its own width and lean, and branch gaps show through.',
+                 B: 'Sunlit tier tips step up to grass green, and each tier\'s lower edge drops to deep teal.',
+                 C: 'The pads take a lit top-left edge, and the bloom gets its glow center.',
+                 D: 'Nothing new on this tile at this step.',
+                 E: 'Each side is one flat facet lit by its own angle, with a bright top plane, a moss cap and a crack. The berries come in pairs with cloud-white glints.' })[h.id],
+    7: (h) => ({ A: 'A fern under the big oak, a tuft, and single-pixel flowers only where sunlight reaches the floor.',
+                 B: 'Arched ferns at the pine roots and single-pixel flowers, sized for the back row.',
+                 C: 'Edge flowers, a fern and tall tufts along the near bank.',
+                 D: 'Four kinds of flower on stems with leaves: poppies, daisies, buttercups and lupine spikes, one kind per clump, plus tall tufts.',
+                 E: 'Red-cap mushrooms with white spots, pebbles, a few flowers and tufts between the rocks.' })[h.id],
+    8: () => 'The finished tile in place, with its neighbours, the valley and the haze, in the same crop.',
+  };
+  // A critic's pass on every tile: the question, what was wrong, what changed.
+  const REVIEW = {
+    A: [['Does it read as a grove?', 'fail', 'No. Two oaks on an open lawn read as two trees.', 'Five oaks of different sizes now cluster under one shaded floor, with an undergrowth bush and a fallen log.'],
+        ['Do the trees look like trees?', 'partial', 'Mostly. The trunks and round crowns read, but both crowns had the same shape and blurred into the grass.', 'Each crown now has its own width and lean, branch forks, gaps showing branches, and a dark outline.']],
+    B: [['Do the pines read as pines?', 'partial', 'Yes, but they were thin and their trunks were hidden.', 'Fuller tiers with drooping hems, visible trunks and an outline.'],
+        ['Is it a stand, not scattered trees?', 'fail', 'No. It was four trees and a shrub.', 'Six conifers of different heights now stand on a needle-dark floor.'],
+        ['Are the ferns recognizable?', 'fail', 'No. They were green squiggles.', 'Ferns are now arched fronds with leaflets. They read up close and stay small in the full scene.']],
+    C: [['Does the water read as water?', 'pass', 'Yes. Sky reflections, a dark far bank and light streaks.', 'No change needed. Bank stones were added to frame the shore.'],
+        ['Are the cattails visible?', 'fail', 'No. The 5px stems were lost in the grass.', 'Taller stems, 4px brown heads, a long blade and an outline.'],
+        ['Does the waterfall make sense?', 'pass', 'Yes. A channel leads from the pond to the edge.', 'No change needed.']],
+    D: [['Do the flowers read as flowers?', 'fail', 'No. Mixed-color clusters read as confetti.', 'Four distinct kinds on stems with leaves: poppy, daisy, buttercup and lupine. Each clump is one kind.'],
+        ['Does the path read as a path?', 'partial', 'Barely. It was a thin, dark, jagged line.', 'The path is wider now, with a lighter clay center, smoother edges and pebbles that shrink with distance.']],
+    E: [['Do the boulders read as rock?', 'fail', 'No. They were smooth grey eggs.', 'Angular silhouettes with flat facets, a bright top plane, a moss cap and a crack.'],
+        ['Are the mushrooms and berries readable?', 'fail', 'No. The mushrooms were 3px specks.', 'The caps are bigger now, with white spots and outlines. Berries come in pairs with glints.']],
+  };
+  const SHARED = [['Do the build steps match the final art?', 'partial', 'Not quite. The front tiles showed a short stub underside that the finished scene doesn\'t have.', 'Every panel comes from the same renderer, and the front tiles keep their real slice of the island underside at every step.'],
+                  ['Does the grass compete with the props?', 'fail', 'Yes. The streak noise was even everywhere.', 'The streaks now clump into light and dark patches with calm areas between, and the props have outlines.']];
+  const review = document.getElementById('review');
+  const picker = document.getElementById('picker'), splits = document.getElementById('splits');
+  const bg = [20, 42, 55];
+  let current = 3;
+  picker.innerHTML = S.HEX.map((h, i) => `<button type="button" class="${h.front ? 'front' : i === 0 ? 'back1' : 'back2'}" data-i="${i}" aria-pressed="false"><b>${h.id}</b>${h.name}</button>`).join('');
+  splits.innerHTML = S.TILE_STAGES.map((n, k) => `<li class="${k === 7 ? 'final' : ''}"><canvas width="80" height="112"></canvas><div><strong><span>${k + 1}</span>${n}</strong><p></p></div></li>`).join('');
+  function showTile(i) {
+    current = i;
+    picker.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.i === i)));
+    const h = S.HEX[i], box = S.tileBox(i);
+    splits.querySelectorAll('li').forEach((li, k) => {
+      const buf = S.renderTile(i, k + 1, 3.3);
+      const c = li.querySelector('canvas'), cx = c.getContext('2d'), im = cx.createImageData(box.w, box.h);
+      for (let y = 0; y < box.h; y++) for (let x = 0; x < box.w; x++) {
+        const sx = box.x + x, sy = box.y + y, o = (y * box.w + x) * 4;
+        const v = sx < 0 || sy < 0 || sx >= S.W || sy >= S.H ? 255 : buf[sy * S.W + sx];
+        const col = v === 255 ? bg : rgb[v];
+        im.data[o] = col[0]; im.data[o + 1] = col[1]; im.data[o + 2] = col[2]; im.data[o + 3] = 255;
+      }
+      cx.putImageData(im, 0, 0);
+      c.setAttribute('aria-label', `${h.name} tile, step ${k + 1}: ${S.TILE_STAGES[k]}`);
+      li.querySelector('p').textContent = NOTE[k + 1](h);
+    });
+    review.innerHTML = `<h3>Critic's review: ${h.name}</h3>` + REVIEW[h.id].concat(SHARED).map(([q, before, was, fix]) =>
+      `<div class="rv"><strong>${q}</strong><p><span class="tag ${before}">Before: ${before}</span>${was}</p><p><span class="tag pass">Now</span>${fix}</p></div>`
+    ).join('');
+    draw(); // renderTile shares the scene buffer, so repaint the main view
+  }
+  picker.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) showTile(+b.dataset.i); });
+  cv.addEventListener('click', (e) => {
+    const r = cv.getBoundingClientRect();
+    const f = S.tileAt(Math.floor((e.clientX - r.left) / r.width * S.W), Math.floor((e.clientY - r.top) / r.height * S.H));
+    if (f >= 0) { showTile(f); document.getElementById('builds').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
+  });
+  cv.style.cursor = 'pointer';
+  showTile(current);
+  fit(); label(); draw(); requestAnimationFrame(loop);
+})();
+</script>

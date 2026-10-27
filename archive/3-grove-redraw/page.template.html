@@ -1,0 +1,163 @@
+<title>Grove Redraw Study</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+/* Layout: a design review. Audit of the old drawing first, then six candidate styles scored on one checklist,
+   then the pick with its rules. Single committed look: deep teal desk, sky-blue art boards, lime for pass, rose for fail. */
+:root {
+  color-scheme: dark;
+  --bg: #11222e; --panel: #1a3445; --line: #2a4a5a; --fg: #f4f6ea; --muted: #a3b5c4; --board: #a9d5f0;
+  --pass: #9bcb3e; --part: #e6e773; --fail: #e8587d;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+html, body { height: auto; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1140px; margin: 0 auto; padding-block: 22px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 30px; }
+.wrap > * { min-width: 0; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 5.5vw, 44px); line-height: 1; margin: 0; color: var(--pass); text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 500; font-size: 24px; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 500; font-size: 18px; margin: 0; }
+header { display: grid; gap: 8px; }
+header p, section > p { margin: 0; color: var(--muted); max-width: 70ch; }
+section { display: grid; gap: 14px; }
+.board { background: var(--board); line-height: 0; }
+.board canvas { width: 100%; height: auto; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+.audit { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.issues { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: n; }
+.issues li { background: var(--panel); border-left: 3px solid var(--fail); padding: 8px 12px; counter-increment: n; display: grid; gap: 2px; }
+.issues li strong::before { content: counter(n) ". "; color: var(--fail); font-family: var(--mono); }
+.issues li span { color: var(--muted); font-size: 14px; }
+.big-num { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.big-num b { font-family: var(--display); font-size: 26px; color: var(--fail); font-weight: 700; margin-right: 6px; }
+.styles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.styles li { background: var(--panel); border: 1px solid var(--line); display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+.styles li.pick { border-color: var(--pass); box-shadow: 0 0 0 2px var(--pass); }
+.styles .body { padding: 12px 14px 14px; display: grid; gap: 8px; align-content: start; }
+.styles .tag { font-family: var(--mono); font-size: 11px; color: var(--bg); background: var(--muted); padding: 1px 6px; justify-self: start; }
+.styles .pick .tag { background: var(--pass); }
+.styles p { margin: 0; color: var(--muted); font-size: 14px; }
+.checks { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.checks li { display: grid; grid-template-columns: 62px 1fr; gap: 8px; background: none; border: 0; }
+.v { font-family: var(--mono); font-size: 11px; text-align: center; color: var(--bg); padding: 1px 0; align-self: start; }
+.v.pass { background: var(--pass); } .v.part { background: var(--part); } .v.fail { background: var(--fail); }
+.checks small { color: var(--muted); }
+.metrics { display: flex; flex-wrap: wrap; gap: 6px; }
+.metrics span { font-family: var(--mono); font-size: 11px; background: var(--bg); color: var(--fg); padding: 2px 6px; font-variant-numeric: tabular-nums; }
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.compare figure { margin: 0; display: grid; gap: 6px; }
+.compare figcaption { font-family: var(--display); font-size: 15px; color: var(--muted); }
+.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rules li { background: var(--panel); padding: 10px 14px; display: grid; gap: 2px; border-left: 3px solid var(--pass); }
+.rules strong { font-size: 14px; }
+.rules span { color: var(--muted); font-size: 14px; }
+footer { color: var(--muted); font-size: 13px; }
+@media (max-width: 900px) { .styles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .audit, .compare, .rules { grid-template-columns: 1fr; } .styles { grid-template-columns: 1fr; } .audit .board { max-width: 300px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Grove Redraw Study</h1>
+    <p>The Grove tile redrawn from scratch in six different drawing techniques, not palette swaps. Each one is scored on the same checklist, and the winner's rules are written down so every other tile can follow them.</p>
+  </header>
+
+  <section>
+    <h2>What was wrong with the current Grove</h2>
+    <div class="audit">
+      <div><div class="board"><canvas id="old" aria-label="The current Grove tile"></canvas></div><p class="big-num"><b id="oldStray">0</b>stray single pixels</p></div>
+      <ol class="issues">
+        <li><strong>The hex disappears</strong><span>Five large crowns cover the whole top and spill past the edges, so the tile no longer reads as a hex.</span></li>
+        <li><strong>Trees merge into one mass</strong><span>The crowns overlap with no separation, so you can't count the trees or tell where one ends.</span></li>
+        <li><strong>Leaves are random noise</strong><span>Crown shading is noise plus a scallop pattern, which leaves hundreds of stray pixels instead of leaf clusters.</span></li>
+        <li><strong>The light breaks into speckle</strong><span>The noise term is as strong as the light term, so there's no clear lit side and shaded side on each tree.</span></li>
+        <li><strong>Outlines double up</strong><span>Soft and hard outlines from overlapping props land on top of each other and form thick dark seams.</span></li>
+        <li><strong>Details are scattered at random</strong><span>Flowers and leaf flecks were placed by hash, so some landed under crowns, on edges or on the wall.</span></li>
+        <li><strong>The log reads as a bar</strong><span>A flat brown strip with no cut end, so it doesn't read as a fallen log.</span></li>
+        <li><strong>The wall is noisy too</strong><span>Random pebbles, plates and vines make the side busier than the top, which pulls the eye down.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>Six ways to draw it</h2>
+    <p>Every candidate uses the same layout: four oaks, a bush, a fallen log, five flowers, four tufts and a mushroom. Nothing is random. Crowns are built from explicit clumps, facets or leaf stamps, the small props are hand-drawn sprites, and a cleanup pass removes any stray pixels left in the crowns and ground. The numbers are measured, not judged.</p>
+    <ul class="styles" id="styles"></ul>
+  </section>
+
+  <section>
+    <h2>The pick: Leafy Cluster</h2>
+    <p>It's the only style that passes every check. It keeps the scene's palette and soft lighting, so it drops into Verdant Isle without clashing, and its rules carry straight over to pines, bushes and the other tiles.</p>
+    <div class="compare">
+      <figure><div class="board"><canvas id="cmpOld" aria-label="Current Grove"></canvas></div><figcaption>Before</figcaption></figure>
+      <figure><div class="board"><canvas id="cmpNew" aria-label="Leafy Cluster Grove"></canvas></div><figcaption>After: Leafy Cluster</figcaption></figure>
+    </div>
+    <h3>Style rules to use on every tile</h3>
+    <ul class="rules">
+      <li><strong>One light, upper left</strong><span>Every shape is lit from the same corner: lit caps top-left, dark crescents bottom-right.</span></li>
+      <li><strong>Build from clumps, never noise</strong><span>A crown is 5 lobed clumps, each shaded on its own. Random shading is not allowed.</span></li>
+      <li><strong>Four tones per material</strong><span>Dark, mid, light and one highlight. The highlight only appears as small two-pixel leaf strokes.</span></li>
+      <li><strong>Selective outline</strong><span>One pixel around each prop: deep teal on the bottom and right, pine on the top and left. Never doubled.</span></li>
+      <li><strong>Keep the hex readable</strong><span>Trunks stand well inside the tile, and at least half of the top rim stays visible.</span></li>
+      <li><strong>Hand-place details</strong><span>Flowers, tufts, logs and mushrooms are drawn sprites, placed on open ground and checked to stay on the top face.</span></li>
+      <li><strong>Zero stray pixels</strong><span>A cleanup pass merges any pixel that matches none of its neighbours. Only intended accents, like a flower's center, stay single.</span></li>
+      <li><strong>Calm walls</strong><span>Even strata bands, a fixed drip rhythm and a single crease, so the top stays the focus.</span></li>
+    </ul>
+  </section>
+
+  <footer>Same 16-color palette throughout. Rendered live from code, so the numbers above are measured each time the page loads.</footer>
+</div>
+
+<script>
+/*SCENE*/
+/*REDRAW*/
+(() => {
+  const S = buildVerdantIsle();
+  const R = buildGroveRedraws();
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const BOARD = hex('#a9d5f0');
+  function paint(canvas, px, w, h, scale, y0 = 0) { // y0 trims empty sky above the art
+    canvas.width = w * scale; canvas.height = (h - y0) * scale;
+    const cx = canvas.getContext('2d'), im = cx.createImageData(canvas.width, canvas.height);
+    const cache = new Map();
+    for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
+      const v = px[(((y / scale) | 0) + y0) * w + ((x / scale) | 0)];
+      let c = BOARD; if (v) { if (!cache.has(v)) cache.set(v, hex(v)); c = cache.get(v); }
+      const o = (y * canvas.width + x) * 4; im.data[o] = c[0]; im.data[o + 1] = c[1]; im.data[o + 2] = c[2]; im.data[o + 3] = 255;
+    }
+    cx.putImageData(im, 0, 0);
+  }
+  // the current Grove, cropped to the same 96x112 board, centred the same way
+  const buf = S.renderTile(0, 7, 3.3), box = S.tileBox(0);
+  const ow = 96, oh = 112, ox = box.x - 8, oy = box.y - 4, old = new Array(ow * oh).fill(null);
+  for (let y = 0; y < oh; y++) for (let x = 0; x < ow; x++) {
+    const sx = ox + x, sy = oy + y;
+    if (sx < 0 || sy < 0 || sx >= S.W || sy >= S.H) continue;
+    const v = buf[sy * S.W + sx]; if (v !== 255) old[y * ow + x] = S.PAL[v];
+  }
+  document.getElementById('oldStray').textContent = R.countStray(old, ow, oh);
+  paint(document.getElementById('old'), old, ow, oh, 3);
+  paint(document.getElementById('cmpOld'), old, ow, oh, 5);
+  paint(document.getElementById('cmpNew'), R.find((s) => s.id === 'leafy').px, 96, 112, 5, 4);
+
+  const CHECK = ['Reads as a hex tile', 'Reads as a grove', 'Trees look like trees', 'One clear light direction', 'Clean pixels, no noise', 'Works for every tile'];
+  const VERDICT = {
+    leafy:   [['pass'], ['pass'], ['pass', 'lobed crowns, trunks, branch forks'], ['pass'], ['pass'], ['pass', 'same rules fit pines and bushes']],
+    cluster: [['pass'], ['pass'], ['part', 'smooth pillow crowns'], ['part', 'diagonal banding across crowns'], ['pass'], ['pass']],
+    cartoon: [['pass'], ['pass'], ['pass'], ['pass'], ['pass'], ['part', 'heavy ink clashes with the outline-free backdrop']],
+    chunky:  [['part', 'only about a third of the rim shows'], ['part', 'reads as tokens, not a wood'], ['pass'], ['pass'], ['pass'], ['part', 'too coarse for flowers and mushrooms']],
+    faceted: [['pass'], ['part', 'reads as a stylized orchard'], ['part', 'gems read as broccoli'], ['pass'], ['pass'], ['part', 'needs its own pine and rock rules']],
+    hibit:   [['part', 'only about a third of the rim shows'], ['pass'], ['fail', 'pointed tops read as conifers'], ['pass'], ['part', 'stamp texture is busy'], ['pass']],
+  };
+  const LABEL = { pass: 'pass', part: 'partial', fail: 'fail' };
+  document.getElementById('styles').innerHTML = R.map((st) => {
+    const m = st.metrics;
+    return `<li class="${st.pick ? 'pick' : ''}"><div class="board"><canvas data-id="${st.id}" aria-label="Grove drawn in ${st.name} style"></canvas></div>
+      <div class="body"><span class="tag">${st.tag}</span><h3>${st.name}</h3><p>${st.blurb}</p>
+      <ul class="checks">${VERDICT[st.id].map(([v, note], i) => `<li><span class="v ${v}">${LABEL[v]}</span><span>${CHECK[i]}${note ? ` <small>· ${note}</small>` : ''}</span></li>`).join('')}</ul>
+      <div class="metrics"><span>stray px ${m.strayBefore} → ${m.strayAfter}</span><span>off tile ${m.offTile}</span><span>over trees ${m.overTrees}</span><span>rim shown ${m.rimVisible}%</span><span>${m.colors} colors</span></div></div></li>`;
+  }).join('');
+  document.querySelectorAll('#styles canvas').forEach((c) => paint(c, R.find((s) => s.id === c.dataset.id).px, 96, 112, 3, 26));
+})();
+</script>
