@@ -61,6 +61,20 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 .speed .btn[aria-pressed="true"] { background: var(--leaf); box-shadow: inset 2px 2px 0 var(--leaf-hi), inset -2px -2px 0 var(--leaf-lo); }
 .bottom { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); display: grid; gap: 6px; }
 .hint { padding: 8px 12px; font-size: 14px; line-height: 1.4; }
+.tile { position: absolute; left: var(--gutter-l); top: 280px; width: 300px; box-sizing: border-box; padding: 10px 12px; display: grid; gap: 8px; }
+.tile .th { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tile .th b { font-family: var(--display); font-weight: 600; font-size: 20px; color: var(--lime); }
+.tile .x { font: inherit; color: var(--cream); background: none; border: 0; font-size: 16px; padding: 2px 6px; cursor: pointer; }
+.tile p { margin: 0; line-height: 1.4; }
+.tile .note { color: var(--muted); font-size: 13px; }
+.tile .note:empty { display: none; }
+.slots { display: flex; gap: 6px; flex-wrap: wrap; }
+.slot { width: 36px; height: 36px; display: grid; place-items: center; background: var(--deep0); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 rgba(0,0,0,.35); }
+.slot.on { background: var(--deep2); box-shadow: inset 2px 2px 0 #2f5c74, inset -2px -2px 0 var(--deep0); }
+.slot img { width: 24px; height: 24px; image-rendering: pixelated; }
+.slot:not(.on) img { opacity: .25; }
+.tacts { display: flex; gap: 8px; flex-wrap: wrap; }
+.tacts .btn { flex: 1; justify-content: center; }
 .feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 12.5px; text-shadow: 0 1px 0 var(--ink); }
 .feed li { background: rgba(20, 29, 38, .6); padding: 2px 8px; justify-self: start; }
 .feed li:nth-child(2) { opacity: .75; } .feed li:nth-child(3) { opacity: .5; }
@@ -113,13 +127,14 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
   .side .btn { width: auto; padding: 6px 8px; }
   .side .btn span.lbl { display: none; }
   .bottom { bottom: auto; top: 86px; }
+  .tile { top: 86px; right: var(--gutter-r); width: auto; }
   .feed { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .node.ready { animation: none; } }
 </style>
 </head>
 <body>
-<canvas id="map" aria-label="Verdant Reach map. Click a tree tile to chop."></canvas>
+<canvas id="map" aria-label="Verdant Reach map. Tap a tile to assign workers."></canvas>
 
 <div class="hud" id="hud">
   <div class="res" id="res"></div>
@@ -137,6 +152,13 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
       <button class="btn" data-speed="4">4×</button>
     </div>
   </div>
+  <div class="panel tile" id="tilePanel" hidden>
+      <div class="th"><b id="tName"></b><button class="x" id="tClose" aria-label="Close">✕</button></div>
+      <p id="tInfo"></p>
+      <div class="slots" id="tSlots"></div>
+      <div class="tacts" id="tActs"><button class="btn no" id="tMinus">− Remove</button><button class="btn go" id="tPlus">+ Assign worker</button></div>
+      <p class="note" id="tNote"></p>
+    </div>
   <div class="bottom">
     <ul class="feed" id="log"></ul>
     <div class="panel hint" id="hint"></div>

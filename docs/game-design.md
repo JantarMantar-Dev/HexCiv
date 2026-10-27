@@ -1,12 +1,12 @@
 # HexCiv: game concept (draft)
 
-**Pitch:** an idle game that grows into a factory. You start by clicking trees, hire workers who walk the hexes,
-and end with a valley that runs itself, while the land remembers what you did to it.
+**Pitch:** a management game that grows into a factory. You place workers on hex tiles, they walk the land to
+chop, fish and haul, and you end with a valley that runs itself, while the land remembers what you did to it.
 
 ## Pillars
 
-1. **Click, then hire, then automate.** Every job starts as a click. Gold buys workers who take that job over, and
-   tech makes them better at it. The player moves from doing to placing and planning.
+1. **You manage, workers do.** The player never gathers by hand. Tap a tile, assign workers to it, and they do the
+   work. Gold buys more workers, and tech makes them better at it. The game is about placing and planning.
 2. **The land is the factory.** Production changes the tiles themselves. Chopping a forest wears it down to
    grassland, and quarrying a boulder field leaves bare ground. Every choice is visible and permanent.
 3. **Distance is the cost.** Workers walk, and terrain move costs decide how long each trip takes. Where you put a
@@ -19,15 +19,13 @@ and end with a valley that runs itself, while the land remembers what you did to
 The map is covered in fog except for the river valley. The player has a dock on the lake at the river mouth, a
 little gold, and nothing else. Pines stand near the river's upper bend.
 
-1. Click a pine tile to chop. A log drops on that tile.
-2. Click the log to carry it to the dock and sell it. That earns the first gold.
-3. The first gold hires a hauler, who walks to logs you chopped and carries them to the dock.
-
-From that point the player only clicks to chop, and the first tech (axes) takes that job over too.
+1. One worker waits at the dock. Tap a pine tile and assign them as a lumberjack.
+2. The lumberjack walks there, chops, and carries each log to the dock, where it sells. That earns the first gold.
+3. Gold hires more workers. Assign them to more forests, or to a beach to fish for food.
 
 ## Core loop
 
-1. **Make:** click or assign workers to gather on a tile.
+1. **Make:** assign workers to a tile: lumberjacks on forests, fishers on beaches and ponds.
 2. **Move:** workers carry goods along the hexes; later, logs float down the river.
 3. **Sell:** goods sold at the dock earn gold.
 4. **Spend:** gold buys workers, buildings and tech.
@@ -35,13 +33,16 @@ From that point the player only clicks to chop, and the first tech (axes) takes 
 
 ## Workers
 
-- Hired with gold at the dock. Each worker has one job: haul, chop, quarry, mine, farm.
+- Hired with gold at the dock. Each worker is assigned to one tile, and the tile decides the job: chop, fish,
+  later quarry, mine or farm. Each tile has a few slots (3 lumberjacks, 2 fishers). Unassigned workers wait at the
+  dock. When a forest is cut out, its lumberjacks move to standing forest nearby, or go idle.
 - Workers walk tile to tile. A tile's move cost is the time it takes to cross it (grass 1, forest 2, swamp 3,
   mountains 4). Lakes are impassable.
 - A worker carries one item at a time until carrying tech upgrades it.
-- **Upkeep:** every worker costs gold and food each season. A worker who is not paid or fed stops working until
-  they are. Upkeep caps how fast the player can grow, and food is what makes Fishing, and later Farms, matter.
-- The player starts with one worker, so hauling is visible from the first click.
+- **Upkeep:** every worker costs gold and food each season. A worker who is not paid or fed works at half speed until
+  they are, so the valley slows down instead of locking up. Upkeep caps how fast the player can grow, and food
+  is what makes fishers, and later farms, matter.
+- The player starts with one worker, so the first thing they do is give someone a job.
 
 ## Tech tree
 
@@ -101,9 +102,9 @@ The yearly puzzle is to stock enough food and gold before winter to keep every w
 ## First prototype
 
 The Verdant Reach map with fog, played full screen with a game HUD: resources on the left, menu, tech tree and hiring
-on the right, and a main menu that resumes a saved game. Click to chop, let the starting worker haul logs to the
-dock, pay upkeep in gold and food, and buy Axes, Fishing, Baskets, Sawmill, Forestry and Log rafting from the tech
-tree. Win by filling one dock contract before the first winter. Stone, Mining and Farms show on the tree as coming
+on the right, and a main menu that resumes a saved game. Tap a tile to open its panel and assign lumberjacks or
+fishers, pay upkeep in gold and food, and buy Axes, Fishing nets, Baskets, Sawmill, Forestry and Log rafting from
+the tech tree. Win by filling one dock contract before the first winter. Stone, Mining and Farms show on the tree as coming
 later.
 
 Move costs in `src/tiles.js` become walking times. Defense values are left over from the map viewer and will be

@@ -1,5 +1,6 @@
-// HexCiv prototype: click to chop, workers walk the hexes and haul to the dock, sell for gold, pay upkeep in gold and
-// food each season, grow through a tech tree, fill the dock's contracts. Forests grow back. See docs/game-design.md.
+// HexCiv prototype: tap a tile and assign workers to it. Lumberjacks chop and haul logs to the dock, fishers feed the
+// crew, workers cost gold and food each season, a tech tree speeds everything up, and the dock posts contracts.
+// Cut forests grow back. See docs/game-design.md.
 (() => {
   const X = buildHexTiles(), icon = buildHudIcons();
   const B = X.BIOMES, MAP = X.MAPS.world, RIVER = MAP.river;
@@ -8,26 +9,28 @@
   const SEASON_LEN = 60;              // seconds per season
   const SEASONS = ['Spring', 'Summer', 'Autumn', 'Winter'];
   const WINTER = 3;
-  const HITS_PER_LOG = 3;             // clicks per log
-  const CHOP_TIME = 2.5;              // seconds for a worker with an axe to cut one log
+  const CHOP_TIME = 4;                // seconds to cut one log by hand; Axes halve it
+  const FISH_TIME = 8;                // seconds per fish; Fishing nets halve it
   const STEP = 0.45;                  // seconds per point of move cost
   const SNOW = 1.6;                   // winter walking slowdown
   const RAFT_STEP = 0.7;              // seconds per river tile
   const LOG_PRICE = 2, PLANK_PRICE = 6, MILL_TIME = 3;
   const UPKEEP = 2, EAT = 1;          // gold and food per worker per season
-  const FISH_TIME = 8;                // seconds per fish at the dock, with Fishing
+  const SLOW = 0.5;                   // speed of a worker who is unpaid or hungry
   const REGROW = 70;                  // seconds for cut land to grow back one stage (outside winter)
   const hireCost = () => 15 + 5 * Math.max(0, S.workers.length - 1);
   const WOOD = { forest: { wood: 18, next: 'pines' }, pines: { wood: 12, next: 'grass' }, grove: { wood: 10, next: 'grass' } };
+  const FISH = new Set(['beach', 'pond']);
+  const SLOTS = { wood: 3, fish: 2 };
   // x, y place the node on the tree (percent of the board)
   const TECH = [
-    { id: 'axes', name: 'Axes', icon: 'axe', cost: 40, x: 30, y: 14, text: 'Workers chop trees on their own when there are no logs to pick up.' },
-    { id: 'fishing', name: 'Fishing', icon: 'fishing', cost: 30, x: 76, y: 14, text: `The dock catches a fish every ${FISH_TIME} seconds. Workers eat ${EAT} food each season.` },
-    { id: 'baskets', name: 'Baskets', icon: 'basket', cost: 50, x: 12, y: 40, needs: 'axes', text: 'Workers carry 3 logs per trip instead of 1.' },
+    { id: 'axes', name: 'Axes', icon: 'axe', cost: 40, x: 30, y: 14, text: 'Lumberjacks chop twice as fast.' },
+    { id: 'fishing', name: 'Fishing nets', icon: 'fishing', cost: 30, x: 76, y: 14, text: 'Fishers catch twice as many fish.' },
+    { id: 'baskets', name: 'Baskets', icon: 'basket', cost: 50, x: 12, y: 40, needs: 'axes', text: 'Lumberjacks carry 3 logs per trip instead of 1.' },
     { id: 'sawmill', name: 'Sawmill', icon: 'sawmill', cost: 80, x: 36, y: 40, needs: 'axes', text: `Built at the dock. Turns 2 logs into 1 plank, which sells for ${PLANK_PRICE} gold.` },
     { id: 'forestry', name: 'Forestry', icon: 'forestry', cost: 60, x: 60, y: 40, needs: 'axes', text: 'Cut land grows back twice as fast.' },
     { id: 'farms', name: 'Farms', icon: 'farms', x: 84, y: 40, needs: 'fishing', soon: true, text: 'Fields of wheat on grassland and meadow. Coming in a later prototype.' },
-    { id: 'rafting', name: 'Log rafting', icon: 'raft', cost: 100, x: 12, y: 66, needs: 'baskets', text: 'Workers drop logs into the nearest river tile and the river floats them to the dock. The river freezes in winter.' },
+    { id: 'rafting', name: 'Log rafting', icon: 'raft', cost: 100, x: 12, y: 66, needs: 'baskets', text: 'Lumberjacks drop logs into the nearest river tile and the river floats them to the dock. The river freezes in winter.' },
     { id: 'stone', name: 'Stone', icon: 'stone', x: 36, y: 66, needs: 'sawmill', soon: true, text: 'Quarry boulder fields and hills for stone. Coming in a later prototype.' },
     { id: 'mining', name: 'Mining', icon: 'mining', x: 36, y: 88, needs: 'stone', soon: true, text: 'Mines in the mountains for ore and coal. Coming in a later prototype.' },
   ];
@@ -48,42 +51,48 @@
   const riverCells = RIVER.map(([c, r]) => get(c, r));
   const ORIG = MAP.cells.map((t) => t.b);
   const HUES = ['#e8587d', '#5f9edd', '#e6e773', '#cfa0ff', '#f39a52', '#7fe0c4'];
+  const kind = (t) => (t === DOCK ? 'dock' : t.wood > 0 ? 'wood' : FISH.has(t.b) ? 'fish' : null);
 
   // ---------- state ----------
   let S;
   function fresh() {
     MAP.cells.forEach((t, i) => {
-      t.b = ORIG[i]; t.wood = WOOD[t.b] ? WOOD[t.b].wood : 0; t.logs = 0; t.reserved = 0; t.hits = 0; t.choppers = 0; t.regrow = 0;
+      t.b = ORIG[i]; t.wood = WOOD[t.b] ? WOOD[t.b].wood : 0; t.regrow = 0;
       t.seen = dist(t, DOCK) <= 2 || riverCells.some((v) => dist(t, v) <= 2);
     });
-    S = { time: 0, gold: 10, food: 10, logsSold: 0, planks: 0, workers: [], rafts: [], fx: [], tech: {}, mill: 0, millT: 0, fishT: 0,
+    S = { time: 0, gold: 10, food: 10, logsSold: 0, planks: 0, workers: [], rafts: [], fx: [], tech: {}, mill: 0, millT: 0,
       contract: 0, base: { logs: 0, planks: 0 }, late: false, deadline: WINTER, seasonCount: 0, log: [], nextId: 1 };
     addWorker();
-    say('Spring, year 1. Your first worker waits at the dock.');
+    say('Spring, year 1. Your first worker waits at the dock for a job.');
     redraw();
   }
   const seasonOf = (n) => n % 4;
   const winter = () => seasonOf(S.seasonCount) === WINTER;
   const cap = () => (S.tech.baskets ? 3 : 1);
   const workerName = (w) => `Worker ${S.workers.indexOf(w) + 1}`;
+  const crewOn = (t) => S.workers.filter((w) => w.post === t);
+  const idle = () => S.workers.filter((w) => !w.post);
   function say(m) { S.log.unshift(m); S.log.length = Math.min(S.log.length, 3); }
   function fx(t, text, color) { const p = center(t); S.fx.push({ x: p.x, y: p.y - 10, text, color, t: 0 }); }
 
   // ---------- save ----------
-  const SAVE = 'hexciv-save-v2';
+  const SAVE = 'hexciv-save-v3';
+  const idx = (t) => (t ? MAP.cells.indexOf(t) : -1);
   function save() {
     if (!S) return;
-    const idx = (t) => MAP.cells.indexOf(t);
-    const data = { ...S, fx: [], cells: MAP.cells.map((t) => [t.b, t.wood, t.logs, t.hits, t.seen ? 1 : 0, Math.round(t.regrow)]),
-      workers: S.workers.map((w) => ({ id: w.id, at: idx(w.at), carry: w.carry, paid: w.paid, hue: w.hue })) };
+    const data = { ...S, fx: [], cells: MAP.cells.map((t) => [t.b, t.wood, t.seen ? 1 : 0, Math.round(t.regrow)]),
+      workers: S.workers.map((w) => ({ id: w.id, at: idx(w.at), post: idx(w.post), carry: w.carry, paid: w.paid, hue: w.hue })) };
     try { localStorage.setItem(SAVE, JSON.stringify(data)); } catch (e) { /* no storage: the game still plays, it just won't resume */ }
   }
   function loadSave() { try { const v = localStorage.getItem(SAVE); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function load(d) {
-    MAP.cells.forEach((t, i) => { const c = d.cells[i]; t.b = c[0]; t.wood = c[1]; t.logs = c[2]; t.hits = c[3]; t.seen = !!c[4]; t.regrow = c[5]; t.reserved = 0; t.choppers = 0; });
+    MAP.cells.forEach((t, i) => { const c = d.cells[i]; t.b = c[0]; t.wood = c[1]; t.seen = !!c[2]; t.regrow = c[3]; });
     S = { ...d, fx: [], workers: [] };
     delete S.cells;
-    d.workers.forEach((w) => { const at = MAP.cells[w.at], p = center(at); S.workers.push({ ...w, at, x: p.x, y: p.y, path: [], seg: 0, job: null, claim: 0, timer: 0, unpaid: false }); });
+    d.workers.forEach((w) => {
+      const at = MAP.cells[w.at], p = center(at);
+      S.workers.push({ ...w, at, post: w.post >= 0 ? MAP.cells[w.post] : null, x: p.x, y: p.y, path: [], seg: 0, job: null, timer: 0, unpaid: false });
+    });
     redraw();
   }
 
@@ -107,14 +116,28 @@
   // ---------- workers ----------
   function addWorker() {
     const p = center(DOCK);
-    S.workers.push({ id: S.nextId++, at: DOCK, x: p.x, y: p.y, path: [], seg: 0, job: null, carry: 0, claim: 0, timer: 0, paid: S.seasonCount, unpaid: false, hue: HUES[S.workers.length % HUES.length] });
+    S.workers.push({ id: S.nextId++, at: DOCK, post: null, x: p.x, y: p.y, path: [], seg: 0, job: null, carry: 0, timer: 0, paid: S.seasonCount, unpaid: false, hue: HUES[S.workers.length % HUES.length] });
   }
   function hire() {
     const c = hireCost(); if (S.gold < c) return;
     S.gold -= c; addWorker();
     say(`Worker ${S.workers.length} hired for ${c} gold.`);
   }
+  function assign(t) {
+    const k = kind(t); if (!k || k === 'dock' || crewOn(t).length >= SLOTS[k]) return;
+    const free = idle(); if (!free.length) return;
+    // the idle worker closest to the tile takes the job
+    free.sort((a, b) => dist(a.at, t) - dist(b.at, t));
+    const w = free[0]; w.post = t; if (!w.carry) { w.job = null; w.path = w.path.slice(0, 1); }
+    say(`${workerName(w)} now works the ${B[t.b].name.toLowerCase()}.`);
+  }
+  function unassign(t) {
+    const crew = crewOn(t); if (!crew.length) return;
+    const w = crew[crew.length - 1]; w.post = null; if (!w.carry) { w.job = null; w.path = w.path.slice(0, 1); }
+    say(`${workerName(w)} heads back to the dock.`);
+  }
   function go(w, D, t, job) {
+    if (!D.cost.has(t)) { w.job = 'wait'; w.timer = 1; return; } // unreachable: try again shortly
     const path = []; let k = t; while (k !== w.at) { path.unshift(k); k = D.prev.get(k); }
     w.path = path; w.seg = 0; w.job = job; w.target = t;
     if (!path.length) arrive(w);
@@ -128,35 +151,35 @@
       }
       return go(w, D, DOCK, 'deliver');
     }
-    const pile = nearest(D, MAP.cells.filter((t) => t.logs - t.reserved > 0));
-    if (pile) { const n = Math.min(cap(), pile.t.logs - pile.t.reserved); pile.t.reserved += n; w.claim = n; return go(w, D, pile.t, 'pickup'); }
-    if (S.tech.axes) {
-      const tree = nearest(D, MAP.cells.filter((t) => t.seen && t.wood > 0 && t.choppers < 2));
-      if (tree) { tree.t.choppers++; return go(w, D, tree.t, 'chop'); }
-    }
+    const t = w.post, k = t && kind(t);
+    if (k === 'wood') return go(w, D, t, 'chop');
+    if (k === 'fish') return go(w, D, t, 'fish');
+    if (t) { w.post = null; say(`${workerName(w)} has nothing left to do there and heads back to the dock.`); }
     if (w.at !== DOCK) return go(w, D, DOCK, 'home');
     w.job = 'wait'; w.timer = 1;
   }
   function arrive(w) {
     const t = w.target;
-    if (w.job === 'pickup') { const n = Math.min(w.claim, t.logs); t.logs -= n; t.reserved -= w.claim; w.carry += n; w.claim = 0; w.job = null; }
-    else if (w.job === 'chop') { w.job = 'chopping'; w.timer = CHOP_TIME; }
+    if (w.job === 'chop') { w.job = 'chopping'; w.timer = CHOP_TIME / (S.tech.axes ? 2 : 1); }
+    else if (w.job === 'fish') { w.job = 'fishing'; w.timer = FISH_TIME / (S.tech.fishing ? 2 : 1); }
     else if (w.job === 'deliver') { deliver(w.carry); w.carry = 0; w.job = null; }
     else if (w.job === 'raft') { for (let i = 0; i < w.carry; i++) S.rafts.push({ i: riverCells.indexOf(t), p: -i * 0.35 }); w.carry = 0; w.job = null; }
     else w.job = null;
   }
+  // Wages and food are due once a season. A worker who goes without keeps working, but at half speed.
   function pay(w) {
-    if (w.paid >= S.seasonCount) return true;
+    if (w.paid >= S.seasonCount) return 1;
     if (S.gold >= UPKEEP && S.food >= EAT) {
       S.gold -= UPKEEP; S.food -= EAT; w.paid = S.seasonCount;
-      if (w.unpaid) say(`${workerName(w)} is paid and fed, and back to work.`);
-      w.unpaid = false; return true;
+      if (w.unpaid) say(`${workerName(w)} is paid and fed, and back to full speed.`);
+      w.unpaid = false; return 1;
     }
-    if (!w.unpaid) say(`${workerName(w)} stopped: no ${S.gold < UPKEEP ? 'gold for wages' : 'food'}.`);
-    w.unpaid = true; return false;
+    if (!w.unpaid) say(`${workerName(w)} slows down: ${S.gold < UPKEEP ? 'no gold for wages' : 'no food'}.`);
+    w.unpaid = S.gold < UPKEEP ? 'gold' : 'food';
+    return SLOW;
   }
   function stepWorker(w, dt) {
-    if (!pay(w)) return;
+    dt *= pay(w);
     if (w.path.length) {
       const n = w.path[0], a = center(w.at), b = center(n);
       w.seg += dt / (STEP * B[n.b].move * (winter() ? SNOW : 1));
@@ -166,12 +189,20 @@
     }
     if (w.job === 'chopping') {
       const t = w.target;
+      if (w.post !== t || t.wood <= 0) { w.job = null; return; }
       w.timer -= dt;
-      if (t.wood <= 0) { t.choppers--; w.job = null; return; }
       if (w.timer <= 0) {
-        cut(t); w.carry++; fx(t, '+1', '#e2bd78');
-        if (w.carry < cap() && t.wood > 0) w.timer = CHOP_TIME; else { t.choppers--; w.job = null; }
+        cut(t); w.carry++; fx(t, '+1 log', '#e2bd78');
+        if (w.carry < cap() && t.wood > 0) w.timer = CHOP_TIME / (S.tech.axes ? 2 : 1); else w.job = null;
       }
+      return;
+    }
+    if (w.job === 'fishing') {
+      const t = w.target;
+      if (w.post !== t) { w.job = null; return; }
+      if (winter() && t.b === 'pond') return; // the pond freezes; the sea does not
+      w.timer -= dt;
+      if (w.timer <= 0) { w.timer = FISH_TIME / (S.tech.fishing ? 2 : 1); S.food++; fx(t, '+1 fish', '#a9d5f0'); }
       return;
     }
     if (w.job === 'wait') { w.timer -= dt; if (w.timer <= 0) w.job = null; return; }
@@ -184,7 +215,15 @@
     if (t.wood > 0) return;
     const was = B[t.b].name, next = WOOD[t.b].next;
     t.b = next; t.wood = WOOD[next] ? WOOD[next].wood : 0;
-    say(`${was} cut back to ${B[next].name.toLowerCase()}. It will grow back.`);
+    if (!t.wood) {
+      const n = crewOn(t).length;
+      // the crew moves on to the closest standing wood nearby, if there is room; otherwise they go idle
+      crewOn(t).forEach((w) => {
+        const spots = MAP.cells.filter((o) => o.seen && o.wood > 0 && dist(o, t) <= 3 && crewOn(o).length < SLOTS.wood).sort((a, b) => dist(a, t) - dist(b, t));
+        w.post = spots[0] || null;
+      });
+      say(`${was} cut back to ${B[next].name.toLowerCase()}. It will grow back.${n ? ' Its lumberjacks move to nearby forest, or go idle if there is none.' : ''}`);
+    } else say(`${was} thinned to ${B[next].name.toLowerCase()}.`);
     redraw();
   }
   function stepLand(dt) {
@@ -192,23 +231,15 @@
     let changed = false;
     MAP.cells.forEach((t, i) => {
       const orig = ORIG[i];
-      if (!WOOD[orig] || t.b === orig || t.choppers > 0) return;
+      if (!WOOD[orig] || t.b === orig || crewOn(t).length) return;
       t.regrow += dt * (S.tech.forestry ? 2 : 1);
       if (t.regrow < REGROW) return;
       t.regrow = 0;
       t.b = t.b === 'grass' ? (orig === 'grove' ? 'grove' : 'pines') : orig;
-      t.wood = WOOD[t.b].wood; t.hits = 0; changed = true;
+      t.wood = WOOD[t.b].wood; changed = true;
       if (t.seen) fx(t, 'regrown', '#9bcb3e');
     });
     if (changed) redraw();
-  }
-  function chopClick(t) {
-    if (!t.seen) { say('That land is under fog. Fill the first contract to explore it.'); return; }
-    if (t === DOCK) { say(`The dock. Logs sell for ${LOG_PRICE} gold${S.tech.sawmill ? `, planks for ${PLANK_PRICE}` : ''}.`); return; }
-    if (t.wood <= 0) return;
-    t.hits++;
-    const p = center(t); for (let i = 0; i < 4; i++) S.fx.push({ chip: true, x: p.x + (Math.random() * 8 - 4), y: p.y - 4, vx: Math.random() * 30 - 15, vy: -30 - Math.random() * 20, t: 0 });
-    if (t.hits >= HITS_PER_LOG) { t.hits = 0; t.logs++; cut(t); fx(t, '+1 log', '#f3dca0'); }
   }
 
   // ---------- economy ----------
@@ -223,10 +254,6 @@
       S.millT += dt;
       if (S.millT >= MILL_TIME) { S.millT = 0; S.mill -= 2; S.planks++; S.gold += PLANK_PRICE; fx(DOCK, `+${PLANK_PRICE}g plank`, '#e6c35a'); }
     } else S.millT = 0;
-    if (S.tech.fishing && !winter()) {
-      S.fishT += dt;
-      if (S.fishT >= FISH_TIME) { S.fishT = 0; S.food++; fx(DOCK, '+1 fish', '#a9d5f0'); }
-    }
   }
   function stepRafts(dt) {
     if (winter()) return; // frozen in place
@@ -251,7 +278,7 @@
   }
   function newSeason() {
     const s = seasonOf(S.seasonCount), y = Math.floor(S.seasonCount / 4) + 1;
-    const note = ['The melt is in and the river runs fast.', 'Long days for hauling.', 'Winter is one season away. Stock food.', 'The river freezes, snow slows walking, and nothing grows.'][s];
+    const note = ['The melt is in and the river runs fast.', 'Long days for hauling.', 'Winter is one season away. Stock food.', 'The river and the pond freeze, snow slows walking, and nothing grows.'][s];
     say(`${SEASONS[s]}, year ${y}. ${note}`);
     if (contract() && S.seasonCount >= S.deadline) {
       S.late = true; S.deadline += 4;
@@ -265,7 +292,7 @@
   const canvas = document.getElementById('map'), cx = canvas.getContext('2d'), tip = document.getElementById('tip');
   const scene = document.createElement('canvas'), sx = scene.getContext('2d');
   const base = document.createElement('canvas'), bx = base.getContext('2d');
-  let R, scale = 2, offX = 0, offY = 0, dpr = 1, hover = null;
+  let R, scale = 2, offX = 0, offY = 0, dpr = 1, hover = null, sel = null;
   const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   function redraw() {
     R = X.renderMap('world');
@@ -304,7 +331,6 @@
     px(p.x - 3, p.y + 2, 12, 3, '#b57f52'); px(p.x - 3, p.y + 4, 12, 1, '#77513c');
     for (let i = 0; i < 4; i++) px(p.x - 2 + i * 3, p.y + 5, 1, 3, '#3f2b31');
     px(p.x + 7, p.y - 7, 1, 9, '#3f2b31'); px(p.x + 8, p.y - 7, 4, 3, '#e8587d');
-    if (S.tech.fishing) { px(p.x - 6, p.y + 1, 1, 6, '#3f2b31'); px(p.x - 7, p.y, 3, 1, '#77513c'); px(p.x - 9, p.y + 2, 2, 1, '#5f9edd'); }
     if (S.tech.sawmill) {
       const x = p.x - 12, y = p.y - 9;
       px(x, y + 3, 9, 6, '#77513c'); px(x, y + 8, 9, 1, '#3f2b31'); px(x - 1, y + 2, 11, 2, '#c0473f'); px(x + 1, y + 1, 7, 1, '#c0473f');
@@ -316,50 +342,53 @@
     px(x, y + 6, 1, 1, '#141d26'); px(x + 2, y + 6, 1, 1, '#141d26');
     px(x, y + 3, 3, 3, w.hue); px(x, y + 5, 3, 1, '#1a3445');
     px(x, y, 3, 3, '#f0c08a'); px(x, y, 3, 1, '#3f2b31');
-    if (S.tech.axes) { px(x + 3, y + 2, 1, 3, '#77513c'); px(x + 3, y + 1, 2, 2, '#a3b5c4'); }
+    const lumber = w.post && w.post.wood > 0;
+    if (lumber) { px(x + 3, y + 2, 1, 3, '#77513c'); px(x + 3, y + 1, 2, 2, S.tech.axes ? '#a3b5c4' : '#5f6e8a'); }
+    if (w.post && FISH.has(w.post.b)) { px(x + 3, y - 2, 1, 6, '#77513c'); if (w.job === 'fishing') px(x + 4, y - 2, 1, 1, '#f4f6ea'); }
     for (let i = 0; i < w.carry; i++) drawLog(x - 1, y - 3 - i * 2);
-    if (w.job === 'chopping' && Math.floor(now * 4) % 2) px(x + 4, y, 2, 1, '#f4f6ea');
-    if (w.unpaid) { px(x + 1, y - 6, 1, 3, '#e8587d'); px(x + 1, y - 2, 1, 1, '#e8587d'); }
+    if ((w.job === 'chopping' || w.job === 'fishing') && Math.floor(now * 4) % 2) px(x + 4, y + 1, 2, 1, '#f4f6ea');
+    if (w.unpaid) { // a bubble: a coin when wages are owed, a fish when food is
+      const bx2 = x - 1, by = y - 9 - w.carry * 2, c = w.unpaid === 'gold' ? '#e6c35a' : '#5f9edd';
+      px(bx2, by, 5, 5, '#f4f6ea'); px(bx2 + 1, by + 1, 3, 3, c); px(bx2 + 1, by + 5, 1, 1, '#f4f6ea');
+    }
+    if (!w.post && w.at === DOCK && !w.path.length && Math.floor(now * 2) % 2) px(x + 1, y - 4, 1, 2, '#e6e773'); // idle: waiting for a job
   }
   function label(text, x, y, color) { cx.lineWidth = 3 * dpr; cx.strokeStyle = '#141d26'; cx.strokeText(text, x, y); cx.fillStyle = color; cx.fillText(text, x, y); }
   function render(now) {
     sx.drawImage(base, 0, 0);
     drawDock();
-    for (const t of MAP.cells) {
-      if (!t.logs) continue;
-      const p = center(t);
-      for (let i = 0; i < Math.min(t.logs, 6); i++) drawLog(p.x - 6 + (i % 2) * 6, p.y + 2 - Math.floor(i / 2) * 2);
-    }
     for (const r of S.rafts) {
       const a = center(riverCells[Math.max(0, r.i)]), b = r.i + 1 < riverCells.length ? center(riverCells[r.i + 1]) : center(DOCK), f = Math.max(0, r.p);
       drawLog(a.x + (b.x - a.x) * f - 2, a.y + (b.y - a.y) * f - 1);
     }
     [...S.workers].sort((a, b) => a.y - b.y).forEach((w) => drawWorker(w, now));
-    for (const f of S.fx) if (f.chip) px(f.x, f.y, 1, 1, f.t < 0.2 ? '#e2bd78' : '#77513c');
     const s = seasonOf(S.seasonCount);
     if (s === WINTER) { sx.fillStyle = 'rgba(220,231,238,0.22)'; sx.fillRect(0, 0, R.w, R.h); }
     else if (s === 2) { sx.fillStyle = 'rgba(243,154,82,0.08)'; sx.fillRect(0, 0, R.w, R.h); }
-    if (hover) { const p = X.at(hover.c, hover.r); sx.drawImage(ring, p.x, p.y + X.FY); }
+    if (hover && hover !== sel) { const p = X.at(hover.c, hover.r); sx.drawImage(ring, p.x, p.y + X.FY); }
+    if (sel) { const p = X.at(sel.c, sel.r); sx.drawImage(ringSel, p.x, p.y + X.FY); }
     // scale up onto the screen, then draw text at screen resolution
     const k = scale * dpr, ox = offX * dpr, oy = offY * dpr;
     cx.fillStyle = '#a9d5f0'; cx.fillRect(0, 0, canvas.width, canvas.height);
     cx.imageSmoothingEnabled = false;
     cx.drawImage(scene, ox, oy, R.w * k, R.h * k);
     cx.textAlign = 'center'; cx.font = `600 ${Math.round(Math.max(11, 5.5 * scale) * dpr)}px "Pixelify Sans", monospace`;
-    for (const t of MAP.cells) {
-      if (t.logs <= 1) continue;
-      const p = center(t); label(`×${t.logs}`, ox + (p.x + 8) * k, oy + (p.y + 8) * k, '#f4f6ea');
-    }
+    const idleN = idle().length;
+    if (idleN) { const p = center(DOCK); label(`${idleN} idle`, ox + (p.x + 2) * k, oy + (p.y - 14) * k, '#e6e773'); }
     if (S.tech.sawmill && S.mill > 0) { const p = center(DOCK); label(`${S.mill} logs at mill`, ox + (p.x - 8) * k, oy + (p.y + 16) * k, '#f3dca0'); }
     for (const f of S.fx) {
-      if (f.chip) continue;
       cx.globalAlpha = Math.max(0, 1 - f.t / 1.2);
       label(f.text, ox + f.x * k, oy + (f.y - f.t * 10) * k, f.color);
       cx.globalAlpha = 1;
     }
   }
-  const ring = document.createElement('canvas'); ring.width = 32; ring.height = 28;
-  { const rc = ring.getContext('2d'); rc.fillStyle = '#f4f6ea'; for (let y = 0; y < 28; y++) for (let x = 0; x < 32; x++) if (X.inFace(x, y) && (!X.inFace(x - 1, y) || !X.inFace(x + 1, y) || !X.inFace(x, y - 1) || !X.inFace(x, y + 1))) rc.fillRect(x, y, 1, 1); }
+  function hexRing(color) {
+    const c = document.createElement('canvas'); c.width = 32; c.height = 28;
+    const rc = c.getContext('2d'); rc.fillStyle = color;
+    for (let y = 0; y < 28; y++) for (let x = 0; x < 32; x++) if (X.inFace(x, y) && (!X.inFace(x - 1, y) || !X.inFace(x + 1, y) || !X.inFace(x, y - 1) || !X.inFace(x, y + 1))) rc.fillRect(x, y, 1, 1);
+    return c;
+  }
+  const ring = hexRing('#f4f6ea'), ringSel = hexRing('#e6c35a');
 
   // ---------- input ----------
   function cellAt(e) {
@@ -367,22 +396,12 @@
     const o = x >= 0 && y >= 0 && x < R.w && y < R.h ? R.owner[y * R.w + x] : -1;
     return o >= 0 ? MAP.cells[o] : null;
   }
-  canvas.addEventListener('pointerdown', (e) => { if (!running()) return; const t = cellAt(e); if (t) chopClick(t); });
+  canvas.addEventListener('pointerdown', (e) => { if (!running()) return; select(cellAt(e)); });
   canvas.addEventListener('pointermove', (e) => {
     hover = running() ? cellAt(e) : null;
-    if (!hover || e.pointerType === 'touch') { tip.style.display = 'none'; return; }
-    const t = hover, lines = [];
-    if (!t.seen) lines.push('Under fog');
-    else {
-      if (t === DOCK) lines.push('Your dock: workers sell here');
-      lines.push(B[t.b].move ? `Walk cost ${B[t.b].move}` : 'Impassable');
-      if (t.wood > 0) lines.push(`${t.wood} logs of wood left`, `Click to chop (${t.hits}/${HITS_PER_LOG})`);
-      const i = MAP.cells.indexOf(t);
-      if (WOOD[ORIG[i]] && t.b !== ORIG[i]) lines.push(winter() ? 'Regrowing (paused for winter)' : `Regrowing: ${Math.round((t.regrow / REGROW) * 100)}%`);
-      if (t.logs) lines.push(`${t.logs} logs on the ground`);
-      if (riverCells.includes(t) && S.tech.rafting) lines.push(winter() ? 'Frozen' : 'Workers raft logs from here');
-    }
-    tip.innerHTML = `<b>${t.seen ? B[t.b].name : 'Unexplored'}</b>${lines.map((l) => `<span>${l}</span>`).join('')}`;
+    if (!hover || e.pointerType === 'touch' || hover === sel) { tip.style.display = 'none'; return; }
+    const t = hover;
+    tip.innerHTML = `<b>${t.seen ? B[t.b].name : 'Unexplored'}</b><span>${t.seen ? tileLine(t) : 'Under fog'}</span>`;
     tip.style.display = 'block';
     let lx = e.clientX + 16, ly = e.clientY + 16;
     if (lx + tip.offsetWidth > innerWidth - 8) lx = e.clientX - tip.offsetWidth - 12;
@@ -394,12 +413,50 @@
   addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 
-  // ---------- HUD ----------
+  // ---------- tile panel ----------
   const $ = (id) => document.getElementById(id);
+  function tileLine(t) {
+    const k = kind(t), crew = crewOn(t).length, i = idx(t);
+    if (k === 'dock') return 'Your dock. Logs sell here, and idle workers wait here.';
+    if (k === 'wood') return `${t.wood} logs of wood left · ${crew}/${SLOTS.wood} lumberjacks`;
+    if (k === 'fish') return `Fishing spot · ${crew}/${SLOTS.fish} fishers`;
+    if (WOOD[ORIG[i]] && t.b !== ORIG[i]) return winter() ? 'Cut land. Regrowing after winter.' : `Cut land, regrowing: ${Math.round((t.regrow / REGROW) * 100)}%`;
+    return B[t.b].move ? `Walk cost ${B[t.b].move}. No work here yet.` : 'Impassable.';
+  }
+  function select(t) {
+    sel = t && t.seen ? t : null;
+    if (t && !t.seen) say('That land is under fog. Fill the first contract to explore it.');
+    tip.style.display = 'none';
+    lastKey = '';
+  }
+  function updateTilePanel() {
+    const t = sel, panel = $('tilePanel');
+    panel.hidden = !t; $('hint').hidden = !!t;
+    if (!t) return;
+    const k = kind(t), crew = crewOn(t), free = idle().length;
+    $('tName').textContent = t === DOCK ? 'Dock' : B[t.b].name;
+    let info = tileLine(t);
+    if (k === 'wood') info = `${t.wood} logs of wood left. Lumberjacks chop here and carry logs to the ${S.tech.rafting ? 'river or the dock' : 'dock'}.`;
+    if (k === 'fish') info = `Fishers catch a fish every ${FISH_TIME / (S.tech.fishing ? 2 : 1)} seconds${t.b === 'pond' ? ', except in winter when the pond freezes' : ''}.`;
+    $('tInfo').textContent = info;
+    const slots = k === 'wood' || k === 'fish' ? SLOTS[k] : 0;
+    $('tSlots').innerHTML = Array.from({ length: slots }, (_, i) => `<div class="slot${i < crew.length ? ' on' : ''}"><img alt="${i < crew.length ? 'worker' : 'empty slot'}" src="${icon('pop')}"></div>`).join('');
+    $('tActs').hidden = !slots;
+    $('tMinus').disabled = !crew.length;
+    $('tPlus').disabled = !free || crew.length >= slots;
+    $('tPlus').textContent = k === 'fish' ? '+ Assign fisher' : '+ Assign lumberjack';
+    $('tNote').textContent = !slots ? (t === DOCK ? `${free} idle worker${free === 1 ? '' : 's'} here. Tap a forest or a beach to give them a job.` : '')
+      : crew.length >= slots ? 'This tile is full.' : free ? `${free} idle worker${free === 1 ? '' : 's'} at the dock.` : `No idle workers. Hire one for ${hireCost()} gold, or remove a worker from another tile.`;
+  }
+  $('tClose').addEventListener('click', () => select(null));
+  $('tPlus').addEventListener('click', () => { if (sel) assign(sel); lastKey = ''; });
+  $('tMinus').addEventListener('click', () => { if (sel) unassign(sel); lastKey = ''; });
+
+  // ---------- HUD ----------
   document.querySelectorAll('img[data-ic]').forEach((im) => { im.src = icon(im.dataset.ic); });
   const RES = [
     { id: 'gold', icon: 'coin', name: 'Gold', val: () => S.gold },
-    { id: 'pop', icon: 'pop', name: 'Workers', val: () => S.workers.length },
+    { id: 'pop', icon: 'pop', name: 'Workers', val: () => { const n = idle().length; return n ? `${S.workers.length} · ${n} idle` : S.workers.length; }, warn: () => idle().length > 0 },
     { id: 'food', icon: 'food', name: 'Food', val: () => S.food, warn: () => S.food < S.workers.length * EAT },
     { id: 'logs', icon: 'log', name: 'Logs sold', val: () => S.logsSold },
     { id: 'planks', icon: 'plank', name: 'Planks', val: () => S.planks },
@@ -410,13 +467,16 @@
   document.querySelectorAll('[data-speed]').forEach((b) => b.addEventListener('click', () => {
     speed = +b.dataset.speed; document.querySelectorAll('[data-speed]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
   }));
-  $('hire').addEventListener('click', hire);
+  $('hire').addEventListener('click', () => { hire(); lastKey = ''; });
   function hint() {
-    if (S.workers.some((w) => w.unpaid)) return S.food < EAT ? 'Your crew is out of food. Buy Fishing in the tech tree so the dock catches fish.' : 'Your crew is waiting for wages. Sell logs to pay them.';
-    if (!S.tech.axes) return `Click pine or oak tiles to chop: every ${HITS_PER_LOG} clicks drops a log. Your worker carries logs to the dock and sells them. Save up for Axes in the tech tree.`;
-    if (!S.tech.fishing) return `Each worker eats ${EAT} food a season and you have ${S.food}. Fishing at the dock keeps them fed.`;
-    if (!S.tech.rafting) return 'Workers walk slowly through forest and swamp. Log rafting lets the river carry logs to the dock for free.';
-    return 'The valley runs itself now. Cut forests grow back, so keep your crew near the trees and stock food before winter.';
+    const free = idle().length, fishers = S.workers.filter((w) => w.post && FISH.has(w.post.b)).length;
+    if (S.workers.some((w) => w.unpaid === 'food') || (S.food < S.workers.length * EAT * 2 && !fishers)) return 'Food is running low and hungry workers slow down. Tap a beach tile and assign a fisher.';
+    if (S.workers.some((w) => w.unpaid === 'gold')) return 'You can\'t pay wages, so your crew has slowed down. Sell more logs.';
+    if (!S.workers.some((w) => w.post)) return 'Tap a pine or oak tile near the river, then assign your worker as a lumberjack. They chop and carry the logs to the dock to sell.';
+    if (free) return `${free} worker${free === 1 ? ' is' : 's are'} idle at the dock. Tap a tile to give them a job.`;
+    if (!S.tech.axes) return 'Save 40 gold for Axes in the tech tree so lumberjacks chop twice as fast. Hire more workers to grow faster.';
+    if (!S.tech.rafting) return 'Lumberjacks walk slowly through forest and swamp. Log rafting lets the river carry logs to the dock for free.';
+    return 'Cut forests grow back when nobody works them, so move lumberjacks around, and stock food before winter.';
   }
   let lastKey = '';
   function updateHud() {
@@ -426,7 +486,8 @@
     $('seasonBar').style.width = `${(into / SEASON_LEN) * 100}%`;
     $('seasonBar').style.background = ['#7fe0c4', '#c9e05a', '#f39a52', '#a9d5f0'][s];
     RES.forEach((r) => { const el = $(`r-${r.id}`); el.querySelector('b').textContent = r.val(); el.classList.toggle('warn', !!(r.warn && r.warn())); });
-    const k = [S.gold, S.workers.length, S.contract, progress(), S.late, S.deadline, S.log.join(), Object.keys(S.tech).join(), s, S.workers.some((w) => w.unpaid)].join('|');
+    const k = [S.gold, S.food, S.workers.map((w) => idx(w.post)).join(), S.contract, progress(), S.late, S.deadline, S.log.join(), Object.keys(S.tech).join(), s,
+      S.workers.map((w) => w.unpaid).join(), sel && idx(sel), sel && sel.wood, sel && sel.b, sel && Math.round(sel.regrow / 7)].join('|');
     if (k === lastKey) return;
     lastKey = k;
     const c = contract();
@@ -438,10 +499,10 @@
     } else $('contract').innerHTML = '<div class="row"><span>All contracts filled</span><span>✓</span></div><p>That is everything in this prototype. Keep growing the valley.</p>';
     $('hireCost').textContent = `${hireCost()}g`;
     $('hire').disabled = S.gold < hireCost();
-    const ready = TECH.some((t) => canBuy(t));
-    $('treeBtn').querySelector('.lbl').textContent = ready ? 'Tech •' : 'Tech';
+    $('treeBtn').querySelector('.lbl').textContent = TECH.some((t) => canBuy(t)) ? 'Tech •' : 'Tech';
     $('log').innerHTML = S.log.map((m) => `<li>${m}</li>`).join('');
     $('hint').textContent = hint();
+    updateTilePanel();
     if (view === 'tree') drawTree();
   }
 
@@ -453,13 +514,12 @@
   }
   function openMenu() {
     save();
-    const has = !!loadSave();
-    $('resume').hidden = !has && !S;
-    $('resume').textContent = S ? 'Resume' : 'Resume saved game';
-    $('newGame').textContent = has || S ? 'New game' : 'Start';
-    $('newGame').classList.toggle('go', !has && !S);
-    $('newGame').dataset.armed = '';
     const sv = loadSave();
+    $('resume').hidden = !sv && !S;
+    $('resume').textContent = 'Resume';
+    $('newGame').textContent = 'New game';
+    $('newGame').classList.remove('go');
+    $('newGame').dataset.armed = '';
     $('saveNote').textContent = sv ? `Saved: ${SEASONS[seasonOf(sv.seasonCount)]}, year ${Math.floor(sv.seasonCount / 4) + 1}, ${sv.gold} gold.` : 'Your game saves in this browser as you play.';
     show('menu');
   }
@@ -467,8 +527,8 @@
   $('resume').addEventListener('click', () => { if (!S) load(loadSave()); show('game'); });
   $('newGame').addEventListener('click', (e) => {
     const b = e.currentTarget;
-    if ((S || loadSave()) && !b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Tap again: replace your saved game'; return; }
-    fresh(); save(); show('game');
+    if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Tap again: replace your saved game'; return; }
+    fresh(); sel = null; save(); show('game');
   });
 
   // ---------- tech tree ----------
@@ -479,7 +539,7 @@
   $('treeBack').addEventListener('click', () => show('game'));
   const graph = $('graph');
   graph.insertAdjacentHTML('beforeend', TECH.map((t) => `<button class="node" id="n-${t.id}" style="left:${t.x}%;top:${t.y}%" aria-label="${t.name}"><img alt="" src="${icon(t.icon)}"><span>${t.name}</span></button>`).join(''));
-  $('links').innerHTML = TECH.filter((t) => t.needs).map((t) => { const p = TECH.find((q) => q.id === t.needs); return `<line id="l-${t.id}" x1="${p.x}" y1="${p.y}" x2="${t.x}" y2="${t.y}" stroke-width="1.2" vector-effect="non-scaling-stroke" style="stroke-width:4px"/>`; }).join('');
+  $('links').innerHTML = TECH.filter((t) => t.needs).map((t) => { const p = TECH.find((q) => q.id === t.needs); return `<line id="l-${t.id}" x1="${p.x}" y1="${p.y}" x2="${t.x}" y2="${t.y}" vector-effect="non-scaling-stroke" style="stroke-width:4px"/>`; }).join('');
   function drawTree() {
     $('treeGold').textContent = S.gold;
     TECH.forEach((t) => {
@@ -495,7 +555,7 @@
     const t = picked;
     $('popIcon').src = icon(t.icon); $('popName').textContent = t.name; $('popText').textContent = t.text;
     $('popPrice').innerHTML = t.soon ? '' : owned(t) ? 'Owned' : `<img class="ic" alt="" src="${icon('coin')}">${t.cost}`;
-    $('popNeed').textContent = t.soon ? '' : owned(t) ? '' : !unlocked(t) ? `Buy ${TECH.find((q) => q.id === t.needs).name} first.` : S.gold < t.cost ? `You need ${t.cost - S.gold} more gold.` : '';
+    $('popNeed').textContent = t.soon || owned(t) ? '' : !unlocked(t) ? `Buy ${TECH.find((q) => q.id === t.needs).name} first.` : S.gold < t.cost ? `You need ${t.cost - S.gold} more gold.` : '';
     $('popYes').hidden = t.soon || owned(t);
     $('popYes').disabled = !canBuy(t);
     $('popNo').textContent = t.soon || owned(t) ? 'Close' : 'Cancel';
@@ -508,7 +568,10 @@
     S.gold -= t.cost; S.tech[t.id] = true; say(`${t.name} bought.`); save();
     drawTree(); show('tree');
   });
-  addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; if (view === 'pop') show('tree'); else if (view === 'tree') show('game'); else if (view === 'game') openMenu(); });
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (view === 'pop') show('tree'); else if (view === 'tree') show('game'); else if (view === 'game') { if (sel) select(null); else openMenu(); }
+  });
 
   // ---------- loop ----------
   let last = performance.now(), saveT = 0;
@@ -524,8 +587,8 @@
         saveT += dt / speed; if (saveT > 5) { saveT = 0; save(); }
       }
       const rdt = Math.min(0.1, dt);
-      S.fx.forEach((f) => { f.t += rdt; if (f.chip) { f.vy += 120 * rdt; f.x += f.vx * rdt; f.y += f.vy * rdt; } });
-      S.fx = S.fx.filter((f) => f.t < (f.chip ? 0.4 : 1.2));
+      S.fx.forEach((f) => { f.t += rdt; });
+      S.fx = S.fx.filter((f) => f.t < 1.2);
       render(now / 1000);
       updateHud();
     }
@@ -537,5 +600,5 @@
   openMenu();
   if (!saved) { $('resume').hidden = true; $('newGame').textContent = 'Start'; $('newGame').classList.add('go'); $('newGame').dataset.armed = '1'; $('saveNote').textContent = 'Your game saves in this browser as you play.'; }
   requestAnimationFrame(frame);
-  window.HexCivGame = { get state() { return S; }, hire, chopClick, cells: MAP.cells, get, show };
+  window.HexCivGame = { get state() { return S; }, hire, assign, unassign, select, cells: MAP.cells, get, show };
 })();
