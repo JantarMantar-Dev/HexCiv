@@ -24,7 +24,8 @@ index.html              Tile viewer: world map with hover tooltips, the tile set
 src/tiles.js            The tile engine: grid, palette, every sprite, every tile layout, maps, checks
 src/viewer.js           Viewer page logic
 play.html               Prototype 1: chop, hire, haul, upkeep, tech and seasons on the Verdant Reach map
-src/game.js             Prototype game logic
+src/game.js             Prototype game logic and HUD
+src/icons.js            Pixel-art HUD and tech tree icons
 art/tiles/*.png         One PNG per terrain, 32x48 at 1x
 art/tilesheet.png/json  All terrains in one strip, with the order and cell metrics
 art/maps/*.png          The composed maps at 1x

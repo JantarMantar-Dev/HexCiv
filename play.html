@@ -5,120 +5,176 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HexCiv Prototype</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&display=swap">
 <style>
-/* Layout: the map is the game, so it takes the left and the ledger (gold, season, contract, crew, tech) stacks on the
-   right; on phones the ledger drops below the map. One dark look, the same night frame as the tile viewer. */
+/* Layout: the map fills the screen. Resources run down the left, actions down the right, the season and contract sit
+   top centre, hints at the bottom. Menu and tech tree are full-screen overlays; buying an upgrade is a popup.
+   Panels are drawn like the tiles: an ink outline, a light bevel on the upper-left and a shade on the lower-right. */
 :root {
   color-scheme: dark;
-  --bg: #0e1218; --panel: #161c25; --panel2: #1c2430; --line: #2a3442; --fg: #e9eef0; --muted: #98a6b3;
-  --gold: #e6c35a; --lime: #c9e05a; --teal: #55a58a; --rose: #e27a96; --ice: #a9d5f0;
+  --ink: #141d26; --deep: #1a3445; --deep2: #234559; --deep0: #0f2230; --sky: #a9d5f0;
+  --wood: #77513c; --wood-hi: #b57f52; --wood-lo: #3f2b31;
+  --leaf: #2f7d46; --leaf-hi: #9bcb3e; --leaf-lo: #23584c;
+  --rose: #c0473f; --rose-hi: #e8587d; --rose-lo: #6e2630;
+  --gold: #e6c35a; --cream: #f4f6ea; --muted: #a3b5c4; --lime: #c9e05a;
   --display: "Pixelify Sans", "Courier New", monospace;
   --body: "IBM Plex Sans", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --gutter-l: max(12px, env(safe-area-inset-left, 0px)); --gutter-r: max(12px, env(safe-area-inset-right, 0px));
 }
-html, body { background: var(--bg); color: var(--fg); }
-body { margin: 0; font-family: var(--body); font-size: 14px; line-height: 1.5; }
-.wrap { max-width: 1320px; margin: 0 auto; padding-block: 16px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 16px; align-items: start; }
-.wrap > * { min-width: 0; }
-header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
-h1 { font-family: var(--display); font-weight: 700; font-size: 32px; line-height: 1; margin: 0; color: var(--lime); }
-header p { margin: 0; color: var(--muted); }
-.stage { position: relative; background: #12161d; border: 1px solid var(--line); padding: 8px; overflow: hidden; }
-.stage canvas { display: block; margin: 0 auto; max-width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; cursor: pointer; touch-action: manipulation; }
-.hint { margin: 8px 0 0; padding: 8px 10px; background: var(--panel2); border-left: 3px solid var(--lime); font-size: 14px; }
-.tip { position: absolute; pointer-events: none; background: rgba(18, 22, 29, 0.95); border: 1px solid #3a4656; padding: 7px 9px; font-size: 13px; line-height: 1.35; min-width: 140px; display: none; }
-.tip b { font-family: var(--display); font-weight: 500; font-size: 16px; display: block; color: var(--lime); }
-.tip span { color: var(--muted); font-family: var(--mono); font-size: 12px; display: block; }
-aside { display: grid; gap: 12px; }
-.card { background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; display: grid; gap: 8px; }
-.card h2 { font-family: var(--display); font-weight: 500; font-size: 18px; margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.card h2 small { font-family: var(--mono); font-size: 12px; color: var(--muted); font-weight: 500; }
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.stat { background: var(--panel2); padding: 6px 8px; }
-.stat b { display: block; font-family: var(--mono); font-size: 18px; font-variant-numeric: tabular-nums; }
-.stat span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-.stat.gold b { color: var(--gold); }
-.bar { height: 6px; background: var(--panel2); position: relative; overflow: hidden; }
-.bar i { position: absolute; inset: 0 auto 0 0; background: var(--teal); }
-.season { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 13px; color: var(--muted); }
-.season b { color: var(--fg); font-family: var(--display); font-weight: 500; font-size: 16px; }
-.contract p { margin: 0; }
-.contract .meta { color: var(--muted); font-size: 13px; }
-.pill { font-family: var(--mono); font-size: 11px; padding: 1px 6px; border: 1px solid currentColor; text-transform: uppercase; letter-spacing: .06em; }
-.pill.late { color: var(--rose); } .pill.done { color: var(--lime); } .pill.open { color: var(--ice); }
-button { font: inherit; color: var(--fg); background: var(--panel2); border: 1px solid #3a4656; padding: 8px 10px; cursor: pointer; text-align: left; }
-button:hover:not(:disabled) { border-color: var(--lime); }
-button:disabled { opacity: .5; cursor: not-allowed; }
-button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
-.hire { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.hire .cost, .tech .cost { font-family: var(--mono); color: var(--gold); white-space: nowrap; }
-.techs { display: grid; gap: 6px; }
-.tech { display: grid; gap: 2px; }
-.tech .row { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; }
-.tech small { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-.tech.owned { border-color: var(--teal); }
-.tech.owned .cost { color: var(--teal); }
-.muted { color: var(--muted); font-size: 13px; margin: 0; }
-.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 13px; color: var(--muted); }
-.log li:first-child { color: var(--fg); }
-.controls { display: flex; gap: 6px; flex-wrap: wrap; }
-.controls button { padding: 5px 10px; font-family: var(--mono); font-size: 12px; }
-.controls button[aria-pressed="true"] { border-color: var(--lime); color: var(--lime); }
-@media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--sky); color: var(--cream); font-family: var(--body); font-size: 14px; }
+body { padding-left: 0; padding-right: 0; }
+canvas#map { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; cursor: pointer; }
+img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; height: 24px; display: block; flex: none; }
+.panel { background: var(--deep); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--deep2), inset -2px -2px 0 var(--deep0), 0 3px 0 rgba(20, 29, 38, .45); }
+.btn { font-family: var(--display); font-size: 16px; color: var(--cream); background: var(--wood); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--wood-hi), inset -2px -2px 0 var(--wood-lo), 0 3px 0 rgba(20, 29, 38, .45); padding: 8px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 2px 2px 0 var(--wood-lo), inset -2px -2px 0 var(--wood-hi); }
+.btn.go { background: var(--leaf); box-shadow: inset 2px 2px 0 var(--leaf-hi), inset -2px -2px 0 var(--leaf-lo), 0 3px 0 rgba(20, 29, 38, .45); }
+.btn.no { background: var(--rose); box-shadow: inset 2px 2px 0 var(--rose-hi), inset -2px -2px 0 var(--rose-lo), 0 3px 0 rgba(20, 29, 38, .45); }
+.btn:disabled { filter: grayscale(.8) brightness(.75); cursor: not-allowed; }
+.btn:focus-visible, .node:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.btn .cost { color: var(--gold); }
+
+/* ---- HUD ---- */
+.hud { position: fixed; inset: 0; pointer-events: none; padding: 12px var(--gutter-r) 12px var(--gutter-l); }
+.hud > * { pointer-events: auto; }
+.res { position: absolute; left: var(--gutter-l); top: 12px; display: grid; gap: 6px; }
+.chip { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 6px; min-width: 96px; }
+.chip b { font-family: var(--display); font-weight: 600; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
+.chip small { display: block; font-family: var(--display); font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; line-height: 1.1; }
+.chip.warn b { color: var(--rose-hi); }
+.top { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); display: grid; gap: 6px; width: min(340px, calc(100% - 300px)); }
+.season { padding: 6px 10px; display: grid; gap: 4px; }
+.season .row { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--display); }
+.season b { font-size: 18px; font-weight: 600; }
+.season span { color: var(--muted); font-size: 13px; }
+.bar { height: 6px; background: var(--deep0); border: 1px solid var(--ink); position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; }
+.contract { padding: 6px 10px; display: grid; gap: 4px; font-size: 13px; }
+.contract .row { display: flex; justify-content: space-between; gap: 8px; font-family: var(--display); font-size: 15px; }
+.contract .row .late { color: var(--rose-hi); }
+.contract p { margin: 0; color: var(--muted); }
+.side { position: absolute; right: var(--gutter-r); top: 12px; display: grid; gap: 8px; justify-items: end; }
+.side .btn { width: 100%; justify-content: flex-start; }
+.speed { display: flex; gap: 4px; }
+.speed .btn { padding: 4px 8px; font-size: 14px; width: auto; }
+.speed .btn[aria-pressed="true"] { background: var(--leaf); box-shadow: inset 2px 2px 0 var(--leaf-hi), inset -2px -2px 0 var(--leaf-lo); }
+.bottom { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); display: grid; gap: 6px; }
+.hint { padding: 8px 12px; font-size: 14px; line-height: 1.4; }
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 12.5px; text-shadow: 0 1px 0 var(--ink); }
+.feed li { background: rgba(20, 29, 38, .6); padding: 2px 8px; justify-self: start; }
+.feed li:nth-child(2) { opacity: .75; } .feed li:nth-child(3) { opacity: .5; }
+.tip { position: fixed; pointer-events: none; padding: 6px 9px; font-size: 13px; line-height: 1.35; min-width: 140px; display: none; z-index: 5; }
+.tip b { font-family: var(--display); font-weight: 600; font-size: 16px; display: block; color: var(--lime); }
+.tip span { color: var(--muted); display: block; }
+
+/* ---- overlays ---- */
+.overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px var(--gutter-r) 16px var(--gutter-l); background: rgba(15, 34, 48, .72); overflow-y: auto; }
+.menu { display: grid; gap: 12px; justify-items: center; text-align: center; padding: 28px 28px 24px; width: min(360px, 100%); box-sizing: border-box; }
+.menu h1 { font-family: var(--display); font-weight: 700; font-size: 56px; line-height: 1; margin: 0; color: var(--lime); text-shadow: 3px 3px 0 var(--ink); }
+.menu p { margin: 0 0 8px; color: var(--muted); }
+.menu .btn { width: 100%; justify-content: center; font-size: 20px; padding: 12px; }
+.menu small { color: var(--muted); }
+.tree { width: min(560px, 100%); box-sizing: border-box; padding: 14px; display: grid; gap: 12px; }
+.tree header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tree h2 { font-family: var(--display); font-weight: 600; font-size: 24px; margin: 0; }
+.tree .gold { font-family: var(--display); font-size: 18px; color: var(--gold); display: flex; align-items: center; gap: 6px; }
+.graph { position: relative; aspect-ratio: 4 / 4; max-width: 100%; background: var(--deep0); border: 2px solid var(--ink); }
+.graph svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.node { position: absolute; transform: translate(-50%, -50%); width: 18%; aspect-ratio: 1; padding: 0; display: grid; place-items: center; cursor: pointer;
+  background: var(--deep2); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #2f5c74, inset -2px -2px 0 var(--deep0), 0 3px 0 rgba(0, 0, 0, .4); }
+.node img { width: 60%; height: 60%; image-rendering: pixelated; }
+.node span { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-family: var(--display); font-size: 13px; color: var(--cream); text-shadow: 0 1px 0 var(--ink); }
+.node.owned { background: var(--leaf); box-shadow: inset 2px 2px 0 var(--leaf-hi), inset -2px -2px 0 var(--leaf-lo), 0 3px 0 rgba(0, 0, 0, .4); }
+.node.ready { animation: pulse 1.4s steps(2) infinite; }
+.node.ready::after { content: ""; position: absolute; top: -6px; right: -6px; width: 10px; height: 10px; background: var(--gold); border: 2px solid var(--ink); }
+.node.locked img, .node.soon img { filter: grayscale(1) brightness(.6); }
+.node.soon { border-style: dashed; }
+@keyframes pulse { 50% { box-shadow: inset 2px 2px 0 var(--gold), inset -2px -2px 0 var(--deep0), 0 3px 0 rgba(0, 0, 0, .4); } }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin: 0; }
+.pop { width: min(320px, 100%); box-sizing: border-box; padding: 20px 18px 16px; display: grid; gap: 10px; justify-items: center; text-align: center; }
+.pop .big { width: 72px; height: 72px; padding: 8px; background: var(--deep2); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #2f5c74, inset -2px -2px 0 var(--deep0); }
+.pop .big img { width: 72px; height: 72px; image-rendering: pixelated; }
+.pop h3 { font-family: var(--display); font-weight: 600; font-size: 24px; margin: 0; }
+.pop p { margin: 0; line-height: 1.45; }
+.pop .price { font-family: var(--display); font-size: 20px; color: var(--gold); display: flex; align-items: center; gap: 6px; }
+.pop .need { color: var(--rose-hi); font-size: 13px; }
+.pop .acts { display: flex; gap: 10px; width: 100%; }
+.pop .acts .btn { flex: 1; justify-content: center; }
+
+@media (max-width: 720px) {
+  .res { grid-template-columns: repeat(3, auto); gap: 4px; }
+  .chip { min-width: 0; padding: 3px 8px 3px 4px; }
+  .chip small { display: none; }
+  .chip b { font-size: 16px; }
+  img.ic { width: 18px; height: 18px; }
+  .top { top: auto; bottom: 12px; width: calc(100% - var(--gutter-l) - var(--gutter-r)); left: var(--gutter-l); transform: none; }
+  .side { top: auto; bottom: 146px; grid-auto-flow: column; align-items: center; }
+  .side .btn { width: auto; padding: 6px 8px; }
+  .side .btn span.lbl { display: none; }
+  .bottom { bottom: auto; top: 86px; }
+  .feed { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .node.ready { animation: none; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>HexCiv</h1>
-    <p>Prototype 1: chop, hire, haul, and fill the dock's contract before winter.</p>
-  </header>
+<canvas id="map" aria-label="Verdant Reach map. Click a tree tile to chop."></canvas>
 
-  <section>
-    <div class="stage" id="stage"><canvas id="map" aria-label="Verdant Reach map. Click a tree tile to chop."></canvas><div class="tip" id="tip"></div></div>
-    <p class="hint" id="hint"></p>
-  </section>
-
-  <aside>
-    <div class="card">
-      <div class="season"><b id="season">Spring</b><span id="year">Year 1</span></div>
-      <div class="bar" aria-hidden="true"><i id="seasonBar"></i></div>
-      <div class="stats">
-        <div class="stat gold"><b id="gold">0</b><span>Gold</span></div>
-        <div class="stat"><b id="logs">0</b><span>Logs sold</span></div>
-        <div class="stat"><b id="planks">0</b><span>Planks</span></div>
-      </div>
-      <div class="controls" role="group" aria-label="Game speed">
-        <button id="sp0" data-speed="0">Pause</button>
-        <button id="sp1" data-speed="1" aria-pressed="true">1×</button>
-        <button id="sp2" data-speed="2">2×</button>
-        <button id="sp4" data-speed="4">4×</button>
-        <button id="restart">Restart</button>
-      </div>
+<div class="hud" id="hud">
+  <div class="res" id="res"></div>
+  <div class="top">
+    <div class="panel season"><div class="row"><b id="season">Spring</b><span id="year">Year 1</span></div><div class="bar" aria-hidden="true"><i id="seasonBar"></i></div></div>
+    <div class="panel contract" id="contract"></div>
+  </div>
+  <div class="side">
+    <button class="btn" id="menuBtn" aria-label="Menu">◀ <span class="lbl">Menu</span></button>
+    <button class="btn go" id="treeBtn" aria-label="Tech tree"><img class="ic" alt="" data-ic="tree"><span class="lbl">Tech</span></button>
+    <button class="btn" id="hire" aria-label="Hire a worker"><img class="ic" alt="" data-ic="hire"><span class="lbl">Hire</span> <span class="cost" id="hireCost"></span></button>
+    <div class="speed" role="group" aria-label="Game speed">
+      <button class="btn" data-speed="1" aria-pressed="true">1×</button>
+      <button class="btn" data-speed="2">2×</button>
+      <button class="btn" data-speed="4">4×</button>
     </div>
-
-    <div class="card contract" id="contract"></div>
-
-    <div class="card">
-      <h2>Crew <small id="crew">0 workers</small></h2>
-      <button class="hire" id="hire"><span>Hire a worker</span><span class="cost" id="hireCost"></span></button>
-      <p class="muted" id="upkeep"></p>
-    </div>
-
-    <div class="card">
-      <h2>Tech</h2>
-      <div class="techs" id="techs"></div>
-    </div>
-
-    <div class="card">
-      <h2>Valley log</h2>
-      <ul class="log" id="log"></ul>
-    </div>
-  </aside>
+  </div>
+  <div class="bottom">
+    <ul class="feed" id="log"></ul>
+    <div class="panel hint" id="hint"></div>
+  </div>
 </div>
+<div class="panel tip" id="tip"></div>
+
+<div class="overlay" id="menu">
+  <div class="panel menu">
+    <h1>HexCiv</h1>
+    <p>Chop, haul and trade your way through the seasons of Verdant Reach.</p>
+    <button class="btn go" id="resume">Resume</button>
+    <button class="btn" id="newGame">New game</button>
+    <small id="saveNote"></small>
+  </div>
+</div>
+
+<div class="overlay" id="treeView" hidden>
+  <div class="panel tree">
+    <header><button class="btn" id="treeBack">◀ Back</button><h2>Tech tree</h2><span class="gold"><img class="ic" alt="" data-ic="coin"><span id="treeGold">0</span></span></header>
+    <div class="graph" id="graph"><svg id="links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+    <p class="legend"><span>Green: owned</span><span>Gold dot: you can buy it</span><span>Grey: needs the upgrade above</span><span>Dashed: coming later</span></p>
+  </div>
+</div>
+
+<div class="overlay" id="popView" hidden>
+  <div class="panel pop" role="dialog" aria-modal="true" aria-labelledby="popName">
+    <div class="big"><img id="popIcon" alt=""></div>
+    <h3 id="popName"></h3>
+    <p id="popText"></p>
+    <div class="price" id="popPrice"></div>
+    <p class="need" id="popNeed"></p>
+    <div class="acts"><button class="btn no" id="popNo">Cancel</button><button class="btn go" id="popYes">Buy</button></div>
+  </div>
+</div>
+
 <script src="src/tiles.js"></script>
+<script src="src/icons.js"></script>
 <script src="src/game.js"></script>
 </body>
 </html>

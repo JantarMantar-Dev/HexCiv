@@ -39,9 +39,9 @@ From that point the player only clicks to chop, and the first tech (axes) takes 
 - Workers walk tile to tile. A tile's move cost is the time it takes to cross it (grass 1, forest 2, swamp 3,
   mountains 4). Lakes are impassable.
 - A worker carries one item at a time until carrying tech upgrades it.
-- **Upkeep:** every worker costs gold each season. Once the first stone tech is bought, workers also eat food each
-  season. A worker who is not paid or fed stops working until they are. Upkeep caps how fast the player can grow,
-  and food upkeep is what makes farms matter.
+- **Upkeep:** every worker costs gold and food each season. A worker who is not paid or fed stops working until
+  they are. Upkeep caps how fast the player can grow, and food is what makes Fishing, and later Farms, matter.
+- The player starts with one worker, so hauling is visible from the first click.
 
 ## Tech tree
 
@@ -92,15 +92,19 @@ The yearly puzzle is to stock enough food and gold before winter to keep every w
 
 ## The land remembers
 
-- Chopping wears a forest down: deep forest → pine stand → grassland. Replanting is a later Lumber tech.
+- Chopping wears a forest down: deep forest → pine stand → grassland. Left alone outside winter, cut land grows
+  back one stage at a time; the Forestry tech doubles the speed.
 - Quarrying wears a boulder field down to grassland.
 - Too much clearing near the river dries the soil, and desert spreads. This is a late-game pressure, not part of the
   first prototype.
 
 ## First prototype
 
-The Verdant Reach map with fog. Click to chop pines, carry logs to the dock, sell for gold, hire a hauler, buy axes,
-and pay upkeep at the end of each season. Win by filling one dock contract before the first winter.
+The Verdant Reach map with fog, played full screen with a game HUD: resources on the left, menu, tech tree and hiring
+on the right, and a main menu that resumes a saved game. Click to chop, let the starting worker haul logs to the
+dock, pay upkeep in gold and food, and buy Axes, Fishing, Baskets, Sawmill, Forestry and Log rafting from the tech
+tree. Win by filling one dock contract before the first winter. Stone, Mining and Farms show on the tree as coming
+later.
 
 Move costs in `src/tiles.js` become walking times. Defense values are left over from the map viewer and will be
 removed or reused.
