@@ -176,6 +176,11 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 .node span { font-size: 11px; bottom: -18px; }
 .branch { position: absolute; top: 0; transform: translateX(-50%); font-family: var(--display); font-size: 11px; color: var(--muted); white-space: nowrap; padding-top: 2px; }
 .tree { width: min(760px, 100%); }
+.lock { font: inherit; font-family: var(--display); font-size: 13px; color: var(--ink); background: var(--gold); border: 2px solid var(--ink); padding: 2px 8px; margin-top: 4px; cursor: pointer; display: inline-block; box-shadow: inset -2px -2px 0 #b5932f; }
+.lock:hover { background: #f4e98a; }
+button.chip-step.locked { font: inherit; font-size: 12.5px; color: var(--ink); background: var(--gold); border-color: var(--ink); cursor: pointer; }
+.node.goal { outline: 3px solid var(--gold); outline-offset: 3px; }
+.node.goal span { color: var(--gold); }
 /* ---- v4: the action ring and camps ---- */
 .hud:has(.ring:not([hidden])) .bottom { display: none; }
 .ring { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 4; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100% - 24px); }
@@ -287,7 +292,7 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
   <div class="panel tree">
     <header><button class="btn" id="treeBack">◀ Back</button><h2>Tech tree</h2><span class="gold"><img class="ic" alt="" data-ic="coin"><span id="treeGold">0</span></span></header>
     <div class="graph" id="graph"><svg id="links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg></div>
-    <p class="legend"><span>Green: owned</span><span>Gold dot: you can buy it</span><span>Grey: needs the upgrade above</span><span>Dashed: coming later</span></p>
+    <p class="legend"><span>Green: owned</span><span>Gold dot: you can buy it</span><span>Grey: needs the upgrade above</span><span>Dashed: coming later</span><span>Gold outline: the way to a locked step</span></p>
   </div>
 </div>
 

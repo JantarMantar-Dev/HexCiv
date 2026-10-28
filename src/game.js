@@ -1261,7 +1261,9 @@
     const ch = t.plan && !cp ? chips(t) : [];
     const cur = ch.findIndex((c) => !c[1]), why = stall(t);
     $('tSteps').hidden = !ch.length;
-    $('tSteps').innerHTML = ch.map(([n, done], i) => `<span class="chip-step${done ? ' done' : i === cur ? ' now' : ''}">${n}</span>`).join('<span class="arr">›</span>');
+    const lockedStep = why === 'tech' && landStep(t) && JOB[landStep(t)].tech;
+    $('tSteps').innerHTML = ch.map(([n, done], i) => (i === cur && lockedStep ? `<button class="chip-step now locked" data-tech="${lockedStep}" title="Needs ${TECH.find((q) => q.id === lockedStep).name}">🔒 ${n}</button>`
+      : `<span class="chip-step${done ? ' done' : i === cur ? ' now' : ''}">${n}</span>`)).join('<span class="arr">›</span>');
     $('tDock').hidden = !dock;
     if (dock) {
       const boat = S.boat > 0;
@@ -1280,16 +1282,18 @@
       else if (why) {
         const j = landStep(t);
         const tq = TECH.find((q) => q.id === JOB[j].tech), tn = tq.needs && !has(tq.needs) ? `, after ${TECH.find((q) => q.id === tq.needs).name}` : '';
-        note = why === 'tech' ? `Locked: ${lower(JOB[j].name)} needs the ${tq.name} upgrade (Tech, ${BRANCHES[tq.col]} branch${tn}, ${tq.cost}g)${j === 'reedbed' ? ' and a healed marsh' : ''}.${j === 'sow' ? ' Until then, grass creeps in on its own from living land next to it.' : ''}`
+        note = why === 'tech' ? `Locked: ${lower(JOB[j].name)} needs the ${tq.name} upgrade (${BRANCHES[tq.col]} branch${tn})${j === 'reedbed' ? ' and a healed marsh' : ''}.${j === 'sow' ? ' Until then, grass creeps in on its own from living land next to it.' : ''}`
           : why === 'season' ? `${JOB[j].name}: ${JOB[j].seasons.map((x) => SEASONS[x].toLowerCase()).join(', ')} only.`
             : why === 'stock' ? `${JOB[j].name} needs ${Object.entries(JOB[j].uses).map(([k, n]) => `${n} ${k}`).join(', ')} at the dock.` : STALL_TEXT[why];
       } else if (!cp && helpable(t)) note = 'Tap the hex again to lend a hand.';
       else if (t.own && !cp && plansFor(t).length && !t.plan) note = 'Pick a plan or build a camp from the ring.';
     }
-    $('tNote').textContent = note;
+    const lockId = !needWhy && why === 'tech' && landStep(t) && JOB[landStep(t)].tech;
+    $('tNote').innerHTML = lockId ? `${note} <button class="lock" data-tech="${lockId}">🔒 See ${TECH.find((q) => q.id === lockId).name} in the tech tree</button>` : note.replace(/</g, '&lt;');
   }
   const helpable = (t) => { const j = landStep(t); return (j && !stall(t)) || t.dead || (isForest(t) && t.wood > cutLimit(t)) || (FISHY(t) && !campAt(t)) || (isLand(t) && PLANTS.has(t.cover) && t.water < 2); };
   $('tClose').addEventListener('click', () => select(null));
+  $('tilePanel').addEventListener('click', (e) => { const b = e.target.closest('[data-tech]'); if (b) openTech(b.dataset.tech); });
   $('sellSurplus').addEventListener('click', () => { sellSurplus(); lastKey = ''; });
   $('buyLogs').addEventListener('click', () => { buyStock('logs', 10); lastKey = ''; });
   $('buyFood').addEventListener('click', () => { buyStock('food', 10); lastKey = ''; });
@@ -1403,9 +1407,11 @@
   $('links').innerHTML = TECH.filter((t) => t.needs).map((t) => { const p = TECH.find((q) => q.id === t.needs); return `<line id="l-${t.id}" x1="${p.x}" y1="${p.y}" x2="${t.x}" y2="${t.y}" vector-effect="non-scaling-stroke" style="stroke-width:4px"/>`; }).join('');
   function drawTree() {
     $('treeGold').textContent = S.gold;
+    const path = goal ? chain(TECH.find((t) => t.id === goal)) : [];
+    if (goal && !path.length) goal = null; // reached it
     TECH.forEach((t) => {
       const n = $(`n-${t.id}`);
-      n.className = `node${owned(t) ? ' owned' : ''}${canBuy(t) ? ' ready' : ''}${!unlocked(t) ? ' locked' : ''}${t.soon ? ' soon' : ''}`;
+      n.className = `node${owned(t) ? ' owned' : ''}${canBuy(t) ? ' ready' : ''}${!unlocked(t) ? ' locked' : ''}${t.soon ? ' soon' : ''}${path.includes(t.id) ? ' goal' : ''}`;
       const l = $(`l-${t.id}`); if (l) l.setAttribute('stroke', unlocked(t) ? (owned(t) ? '#9bcb3e' : '#e6c35a') : '#3a4656');
     });
   }
@@ -1418,20 +1424,26 @@
     if (S.food < (t.food || 0)) m.push(`${t.food - S.food} more food`);
     return m.length ? `You need ${m.join(' and ')}.` : '';
   }
-  graph.addEventListener('click', (e) => {
-    const n = e.target.closest('.node'); if (!n) return;
-    picked = TECH.find((t) => `n-${t.id}` === n.id);
-    const t = picked;
+  graph.addEventListener('click', (e) => { const n = e.target.closest('.node'); if (n) openPop(TECH.find((t) => `n-${t.id}` === n.id)); });
+  // the path to an upgrade: it and every upgrade before it that you don't own yet
+  const chain = (t) => { const out = []; for (let q = t; q && !owned(q); q = q.needs && TECH.find((x) => x.id === q.needs)) out.push(q.id); return out; };
+  let goal = null;
+  // From a locked step: open the tree on the upgrade it needs, with the way there marked.
+  function openTech(id) { goal = id; drawTree(); show('tree'); openPop(TECH.find((t) => t.id === id)); }
+  function openPop(t) {
+    picked = t;
     $('popIcon').src = icon(t.icon); $('popName').textContent = t.name; $('popText').textContent = t.text;
     $('popPrice').innerHTML = t.soon ? '' : owned(t) ? 'Owned' : costHtml(t);
     const eu = EUREKA[t.id], learn = eu && !owned(t) && !t.soon ? (eureka(t) ? `Half price: you ${eu[2]}.` : `Half price once you have ${eu[2]}: ${Math.min(eu[1], S.done[eu[0]] || 0)} of ${eu[1]}.`) : '';
-    $('popNeed').textContent = [t.soon || owned(t) ? '' : !unlocked(t) ? `Buy ${TECH.find((q) => q.id === t.needs).name} first.` : missing(t), learn].filter(Boolean).join(' ');
+    const pre = !t.soon && !owned(t) && !unlocked(t) ? TECH.find((q) => q.id === t.needs) : null;
+    $('popNeed').innerHTML = [pre ? `First you need <button class="lock" data-tech="${pre.id}">🔒 ${pre.name}</button>` : t.soon || owned(t) ? '' : missing(t), learn].filter(Boolean).join(' ');
     $('popYes').hidden = t.soon || owned(t);
     $('popYes').disabled = !canBuy(t);
     $('popNo').textContent = t.soon || owned(t) ? 'Close' : 'Cancel';
     show('pop');
     ($('popYes').hidden || $('popYes').disabled ? $('popNo') : $('popYes')).focus();
-  });
+  }
+  $('popNeed').addEventListener('click', (e) => { const b = e.target.closest('[data-tech]'); if (b) openPop(TECH.find((t) => t.id === b.dataset.tech)); });
   $('popNo').addEventListener('click', () => show('tree'));
   $('popYes').addEventListener('click', () => {
     const t = picked; if (!t || !canBuy(t)) return;
