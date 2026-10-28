@@ -270,8 +270,9 @@
   function loadSave() { try { const v = localStorage.getItem(SAVE); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function load(d) {
     cells.forEach((t, i) => CELL_KEYS.forEach((k, j) => { t[k] = d.cells[i][j]; }));
-    S = { ...d, fx: [], workers: [] };
+    S = { goldAcc: 0, marketT: 0, popI: 0, done: {}, mile: 0, found: [], keep: { logs: 30, food: 10 }, graves: [], log: [], ...d, fx: [], workers: [] };
     delete S.cells;
+    if (!Number.isFinite(S.goldAcc)) S.goldAcc = 0; // a bad number here would stop the gold for good
     reindexCamps();
     d.workers.forEach((w) => { const at = cells[w.at], p = center(at); S.workers.push({ ...w, at, x: p.x, y: p.y, path: [], seg: 0, job: null, task: null, carry: null, timer: 0 }); });
     toasts.length = 0;
@@ -1325,6 +1326,7 @@
   document.querySelectorAll('[data-speed]').forEach((b) => b.addEventListener('click', () => {
     speed = +b.dataset.speed; document.querySelectorAll('[data-speed]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
   }));
+  $('paused').addEventListener('click', () => document.querySelector('[data-speed="1"]').click());
   addEventListener('keydown', (e) => { if (e.key === ' ' && running()) { e.preventDefault(); const p = document.querySelector('[data-speed="0"]'); (speed === 0 ? document.querySelector('[data-speed="1"]') : p).click(); } });
   document.querySelectorAll('[data-lens]').forEach((b) => b.addEventListener('click', () => {
     lens = lens === b.dataset.lens ? null : b.dataset.lens;
@@ -1335,6 +1337,7 @@
   $('ribbon').innerHTML = SEASONS.map((x, i) => `<span class="seg" id="seg-${i}" title="${x}">${RIBBON[i].map((ic) => `<img alt="" src="${icon(ic)}">`).join('')}</span>`).join('');
   let lastKey = '', lastNotes = '';
   function updateHud() {
+    $('paused').hidden = !(speed === 0 && view === 'game' && !S.over);
     const s = season();
     $('season').textContent = SEASONS[s];
     $('year').textContent = `Year ${Math.floor(S.seasonCount / 4) + 1}`;
@@ -1466,9 +1469,11 @@
     [...S.workers].forEach((w) => stepWorker(w, dt));
     stepNeeds(dt); stepLand(dt); stepIncome(dt); stepMiles();
   }
+  let fault = 0;
   function frame(now) {
+    requestAnimationFrame(frame); // ask for the next frame first, so one bad frame can never stop the game
     const dt = running() && !S.over ? Math.min(0.1, (now - last) / 1000) * speed : 0; last = now;
-    if (S) {
+    if (S) try {
       if (dt > 0) { advance(dt); saveT += dt / speed; if (saveT > 5) { saveT = 0; save(); } }
       sigT += 1; if (dirty || sigT > 30) { sigT = 0; if (dirty || cells.some((t, i) => sig(t) !== sigs[i])) redraw(); }
       const rdt = Math.min(0.1, dt);
@@ -1476,8 +1481,10 @@
       S.fx = S.fx.filter((f) => f.t < 1.2);
       render(now / 1000);
       updateHud();
+    } catch (e) {
+      console.error(e);
+      if (now - fault > 10000) { fault = now; say(`Something went wrong (${e.message}). The game carries on; please tell us.`); }
     }
-    requestAnimationFrame(frame);
   }
   const saved = loadSave();
   if (saved && !saved.over) { try { load(saved); } catch (e) { fresh(); } } else fresh();

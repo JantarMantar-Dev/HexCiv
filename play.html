@@ -183,6 +183,7 @@ button.chip-step.locked { font: inherit; font-size: 12.5px; color: var(--ink); b
 .node.goal span { color: var(--gold); }
 /* ---- v4: the action ring and camps ---- */
 .hud:has(.ring:not([hidden])) .bottom { display: none; }
+.paused { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5; padding: 10px 16px; font: inherit; font-weight: 700; color: #f4f6ea; background: rgba(63, 43, 49, .88); border: 2px solid #e6c35a; border-radius: 10px; cursor: pointer; }
 .ring { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 4; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100% - 24px); }
 .rv { display: grid; justify-items: center; gap: 2px; min-width: 64px; max-width: 110px; padding: 5px 7px 4px; cursor: pointer;
   font-family: var(--display); font-size: 12.5px; line-height: 1.1; color: var(--cream); text-align: center;
@@ -272,6 +273,7 @@ button.chip-step.locked { font: inherit; font-size: 12.5px; color: var(--ink); b
       <p class="note" id="tNote"></p>
     </div>
   <div class="ring" id="ring" hidden></div>
+  <button class="paused" id="paused" hidden>❚❚ Paused. Tap here or press space to play.</button>
   <div class="bottom">
     <ul class="feed" id="log"></ul>
   </div>
