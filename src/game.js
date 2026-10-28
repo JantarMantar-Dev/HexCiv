@@ -249,7 +249,10 @@
   const winter = () => season() === WINTER;
   const into = () => S.time - S.seasonCount * SEASON_LEN;
   function say(m) { S.log.unshift(m); S.log.length = Math.min(S.log.length, 3); }
-  function notice(m, bad) { say(m); toasts.unshift({ text: m, bad, until: performance.now() + (bad ? 15000 : 8000) }); toasts.length = Math.min(toasts.length, 3); }
+  // what you did and what happened, newest last, for a report to Claude
+  const trail = [];
+  function track(what) { trail.push(`${S ? `t${Math.round(S.time)}` : 'menu'} ${what}`); if (trail.length > 80) trail.shift(); }
+  function notice(m, bad) { say(m); track(`game: ${m}`); toasts.unshift({ text: m, bad, until: performance.now() + (bad ? 15000 : 8000) }); toasts.length = Math.min(toasts.length, 3); }
   function fx(t, text, color) { const p = center(t); S.fx.push({ x: p.x, y: p.y - 10, text, color, t: 0 }); }
   function refreshSeen() { const own = cells.filter((t) => t.own); cells.forEach((t) => { t.seen = own.some((o) => dist(o, t) <= 2); }); }
   function colour() {
@@ -263,9 +266,11 @@
   const idx = (t) => (t ? cells.indexOf(t) : -1);
   function save() {
     if (!S || !S.started) return; // a valley shown behind the menu is not a saved game until you play it
-    const data = { ...S, fx: [], cells: cells.map((t) => CELL_KEYS.map((k) => (typeof t[k] === 'number' ? Math.round(t[k] * 10) / 10 : t[k]))),
+    try { localStorage.setItem(SAVE, JSON.stringify(saveData())); } catch (e) { /* no storage: the game still plays, it just won't resume */ }
+  }
+  function saveData() {
+    return { ...S, fx: [], cells: cells.map((t) => CELL_KEYS.map((k) => (typeof t[k] === 'number' ? Math.round(t[k] * 10) / 10 : t[k]))),
       workers: S.workers.map((w) => ({ id: w.id, name: w.name, hue: w.hue, camp: w.camp, xp: w.xp, at: idx(w.at), hungry: w.hungry, hunger: w.hunger, cold: w.cold, chill: w.chill, sick: w.sick })) };
-    try { localStorage.setItem(SAVE, JSON.stringify(data)); } catch (e) { /* no storage: the game still plays, it just won't resume */ }
   }
   function loadSave() { try { const v = localStorage.getItem(SAVE); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function load(d) {
@@ -1092,6 +1097,7 @@
   canvas.addEventListener('pointerdown', (e) => {
     if (!running()) return;
     const t = cellAt(e);
+    track(`tap ${t ? `${t.c},${t.r} ${nameOf(t)}${t === sel ? ' (again)' : ''}` : 'off the map'}`);
     if (sel && t && t !== sel && sel.plan && t.own && planFits(t, sel.plan) && e.shiftKey) { setPlan(t, sel.plan); return; }
     if (t && t === sel) { if (!help(t)) { ringOpen = !ringOpen; lastKey = ''; } return; } // tap again: lend a hand
     select(t);
@@ -1468,6 +1474,63 @@
     if (view === 'pop') show('tree'); else if (view === 'tree') show('game'); else if (view === 'game') { if (sel) select(null); else openMenu(); }
   });
 
+  // ---------- send to Claude ----------
+  // A snapshot of the game, the selected hex and what everyone is doing, kept where Claude can read it back.
+  const where = (t) => (t ? `${t.c},${t.r}` : null);
+  function report() {
+    const t = sel;
+    return {
+      at: new Date().toISOString(), view, speed, season: SEASONS[season()], year: Math.floor(S.seasonCount / 4) + 1,
+      selected: t && { hex: where(t), name: nameOf(t), camp: campAt(t) ? campName(campAt(t)) : null, values: Object.fromEntries(CELL_KEYS.map((k) => [k, t[k]])), step: landStep(t), stall: stall(t),
+        chips: t.plan ? chips(t).map(([n, done]) => `${done ? '✓' : '·'} ${n}`) : [], note: $('tNote').textContent, actions: verbs(t).map((v) => `${v.label}${v.off ? ' (off)' : ''}`) },
+      workers: S.workers.map((w) => ({ name: w.name, home: campName(homeOf(w)), at: where(w.at), job: w.job, task: where(w.task), taskJob: w.taskJob || null, carry: w.carry, hungry: w.hungry, cold: w.cold })),
+      needs: needs().map(([h, why]) => `${where(h)} ${why}`), log: S.log,
+      save: JSON.stringify(saveData()),
+    };
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b || b.id === 'sendBtn') return;
+    track(`press ${b.id ? `#${b.id} ` : ''}${b.dataset.v ? `[${b.dataset.v}] ` : ''}"${b.textContent.trim().replace(/\s+/g, ' ').slice(0, 40)}"${b.getAttribute('aria-disabled') === 'true' || b.disabled ? ' (disabled)' : ''}`);
+  }, true);
+  addEventListener('keydown', (e) => { if ([' ', 'Escape'].includes(e.key)) track(`key ${e.key === ' ' ? 'space' : e.key}`); }, true);
+  // What is on screen: where the map sits, which hexes show, and the text of every open panel.
+  function screenInfo() {
+    const shown = (id) => { const el = $(id); return el && !el.hidden && el.getClientRects().length > 0; };
+    const vis = cells.filter((t) => { const p = center(t), x = offX + p.x * scale, y = offY + p.y * scale; return x > -20 && y > -20 && x < innerWidth + 20 && y < innerHeight + 20; });
+    return {
+      window: [innerWidth, innerHeight], dpr: devicePixelRatio, map: { offX, offY, scale }, hover: hover && where(hover), lens,
+      visibleHexes: `${vis.length} of ${cells.length}`, selectedOnScreen: sel ? (() => { const p = center(sel); return [Math.round(offX + p.x * scale), Math.round(offY + p.y * scale)]; })() : null,
+      panels: Object.fromEntries(['tilePanel', 'ring', 'treeView', 'popView', 'menu', 'endView', 'paused'].filter(shown).map((id) => [id, $(id).innerText.replace(/\s+/g, ' ').trim().slice(0, 600)])),
+      toasts: toasts.map((x) => x.text), feed: (document.querySelector('.feed') || {}).innerText || '',
+    };
+  }
+  async function shot(assets) { // the map as drawn, scaled down to keep it small
+    const k = Math.min(1, 1280 / canvas.width), c = document.createElement('canvas');
+    c.width = Math.round(canvas.width * k); c.height = Math.round(canvas.height * k);
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(canvas, 0, 0, c.width, c.height);
+    const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+    if (assets && blob) { const a = await assets.upload(blob); return { id: a.id, url: a.url }; }
+    return null;
+  }
+  let sendDb = null, sendAssets = null;
+  (async () => {
+    try { sendDb = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { sendDb = null; }
+    $('sendBtn').hidden = !sendDb;
+    try { sendAssets = sendDb ? await window.claude.use('assets') : null; } catch (e) { sendAssets = null; }
+  })();
+  $('sendBtn').addEventListener('click', async () => {
+    if (!sendDb || !S) return;
+    const b = $('sendBtn'), lbl = b.querySelector('.lbl');
+    try {
+      const r = report();
+      r.screen = screenInfo(); r.trail = trail.slice();
+      try { r.shot = await shot(sendAssets); } catch (e) { r.shot = { error: String(e && (e.code || e.message)) }; }
+      await sendDb.doc('reports/latest').set(r);
+      lbl.textContent = 'Sent ✓'; notice(`Sent to Claude${sel ? ` with the ${lower(nameOf(sel))} selected` : ''}. Tell Claude what you were trying to do.`);
+    } catch (e) { lbl.textContent = 'Could not send'; console.error(e); }
+    setTimeout(() => { lbl.textContent = 'Send to Claude'; }, 3000);
+  });
+
   // ---------- loop ----------
   let last = performance.now(), saveT = 0, sigT = 0;
   function advance(dt) {
@@ -1503,5 +1566,6 @@
   window.HexCivGame = { get state() { return S; }, hire, build, upgrade, help, campAt, nextLevel, needs, verbs, doVerb, goldRate, setPlan, select, buy, sell, sellSurplus, buyStock, cells, get, show, landStep, stall, price, die, spreadRot, redraw, nameOf, alive,
     screenOf(c, r) { const p = center(get(c, r)); return { x: offX + p.x * scale, y: offY + (p.y + 4) * scale }; },
     run(sec) { for (let i = 0; i < sec * 10 && !S.over; i++) advance(0.1); if (dirty) redraw(); },
-    reveal() { cells.forEach((t) => { t.own = true; }); redraw(); } };
+    reveal() { cells.forEach((t) => { t.own = true; }); redraw(); },
+    report, screenInfo, trail, loadReport(r) { load(JSON.parse(r.save)); show('game'); if (r.selected) { const [c, q] = r.selected.hex.split(',').map(Number); select(get(c, q)); } } };
 })();
