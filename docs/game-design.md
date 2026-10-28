@@ -113,6 +113,11 @@ and a few tiles around it are alive.
   death leaves a grave and a notice saying who and why. The run ends when the last one dies.
 - **Jobs heal the land:** clear deadwood for logs, plant saplings, compost dust, burn rot, filter the river, fish and
   farm. Cut a living forest to its last log and it turns to stumps.
+- **Seasons gate the work:** nothing is planted or composted in frozen winter ground, saplings go in only in spring
+  or autumn, and rot burns only in summer and autumn. Growth runs ×1.5 in spring, ×1 in summer, ×0.5 in autumn and
+  stops in winter. Saplings take about three growing seasons to become a pine stand.
+- **Forests last:** a pine stand holds 60 logs, old forest 120, deadwood 30. A rested stand regrows 5 logs a season,
+  old forest cut below a third thins to a pine stand, and a stand cut to its last log becomes stumps.
 - **Rot** spreads one tile a season outside winter, from the mine through every rot tile still joined to it. A living
   forest or a clean river holds it for a season.
 - **Tech:** Fishing nets, Axes, Saplings, Compost, Reed filters, Forestry and Farms. Dam breaking, Quarrying,

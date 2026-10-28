@@ -19,10 +19,11 @@
   const MEAL = 75;                    // each worker eats one food this often, twice as often in winter
   const WARM = 30;                    // in winter each worker burns one log this often
   const STARVE = 120, FREEZE = 75, SICKEN = 60; // seconds a worker lasts hungry, cold, or standing on rot
-  const REGEN = 20;                   // a rested forest grows back one log this often; Forestry halves it
-  const SAPLING_GROW = 150, BARE_HEAL = 180;
+  const REGEN = 30;                   // a rested forest grows back one log this often (5 a season); Forestry halves it
+  const SAPLING_GROW = 450, BARE_HEAL = 180; // saplings take about three growing seasons to become a pine stand
+  const GROWTH = [1.5, 1, 0.5, 0];    // how fast things grow in spring, summer, autumn and winter
   const FLOOD = 20, SEEP = 25;        // the spring flood lasts FLOOD seconds; water seeps SEEP seconds before it
-  const WOOD = { forest: 18, pines: 12, grove: 10 }, DEADWOOD = 8;
+  const WOOD = { forest: 120, pines: 60, grove: 50 }, DEADWOOD = 30, NEW_STAND = 20; // logs a stand holds when full
   const FISH = new Set(['beach', 'pond', 'river']);
   const FIELD = new Set(['grass', 'meadow']);
   const LIVING = new Set(['grass', 'meadow', 'grove', 'pines', 'forest', 'pond', 'swamp', 'river', 'beach']);
@@ -33,10 +34,12 @@
     clear: { who: 'clearer', slots: 3 },
     fish: { who: 'fisher', slots: 2 },
     farm: { who: 'farmer', slots: 2, tech: 'farms' },
-    plant: { who: 'planter', slots: 3, tech: 'saplings', work: 30 },
-    compost: { who: 'composter', slots: 3, tech: 'compost', work: 40 },
-    burn: { who: 'burner', slots: 3, tech: 'compost', work: 30 },
-    filter: { who: 'filter builder', slots: 3, tech: 'reeds', work: 60 },
+    // seasons: when the job can be done. Nothing is dug or planted in frozen ground, saplings wilt if planted in summer,
+    // and rot only burns when it is dry enough.
+    plant: { who: 'planter', slots: 3, tech: 'saplings', work: 30, seasons: [0, 2] },
+    compost: { who: 'composter', slots: 3, tech: 'compost', work: 40, seasons: [0, 1, 2] },
+    burn: { who: 'burner', slots: 3, tech: 'compost', work: 30, seasons: [1, 2] },
+    filter: { who: 'filter builder', slots: 3, tech: 'reeds', work: 60, seasons: [0, 1, 2] },
   };
   // x, y place the node on the tree (percent of the board)
   const TECH = [
@@ -229,6 +232,7 @@
     say(`${S.workers[S.workers.length - 1].name} joins the crew for ${c} gold.`);
   }
   const techOk = (j) => !JOBS[j].tech || !!S.tech[JOBS[j].tech];
+  const inSeason = (j) => !JOBS[j].seasons || JOBS[j].seasons.includes(seasonOf(S.seasonCount));
   function assign(t) {
     const j = jobOf(t); if (!t.own || !j || !techOk(j) || crewOn(t).length >= JOBS[j].slots) return;
     const free = idle(); if (!free.length) return;
@@ -287,6 +291,7 @@
         w.timer -= dt;
         if (w.timer <= 0) { w.timer = workTime(j); S.food++; fx(t, '+1 food', '#a9d5f0'); }
       } else {
+        if (!inSeason(j)) return; // the crew waits on the tile until the season allows the work
         t.work += dt;
         if (t.work >= JOBS[j].work) finish(t, j);
       }
@@ -333,6 +338,7 @@
   // ---------- land ----------
   function cut(t, j) {
     t.wood--; t.regen = 0;
+    if (t.b === 'forest' && t.wood > 0 && t.wood < WOOD.forest / 3) { t.b = 'pines'; redraw(); } // old forest cut below a third thins to a pine stand
     if (t.wood > 0) return;
     const was = nameOf(t);
     if (t.ruin === 'deadwood') { t.ruin = 'bare'; t.b = 'grass'; }
@@ -350,7 +356,9 @@
     redraw();
   }
   function stepLand(dt) {
-    if (winter()) return;
+    const g = GROWTH[seasonOf(S.seasonCount)];
+    if (!g) return; // nothing grows in winter
+    dt *= g;
     let changed = false;
     for (const t of cells) {
       if (t.rot) continue;
@@ -359,7 +367,7 @@
         if (t.regen >= REGEN) { t.regen = 0; t.wood++; }
       } else if (t.ruin === 'sapling') {
         t.grow += dt;
-        if (t.grow >= SAPLING_GROW) { t.ruin = null; t.b = 'pines'; t.wood = WOOD.pines; t.regen = 0; changed = true; if (t.seen) fx(t, 'grown', '#9bcb3e'); }
+        if (t.grow >= SAPLING_GROW) { t.ruin = null; t.b = 'pines'; t.wood = NEW_STAND; t.regen = 0; changed = true; if (t.seen) fx(t, 'grown', '#9bcb3e'); }
       } else if (t.ruin === 'bare' && t.own && !crewOn(t).length && nbs(t).some((n) => healthy(n) && LIVING.has(n.b) && n !== DOCK)) {
         t.heal += dt;
         if (t.heal >= BARE_HEAL) { t.ruin = null; t.b = 'grass'; t.heal = 0; changed = true; }
@@ -707,6 +715,8 @@
     else if (!t.own) note = buyable ? (S.gold < price(t) ? `You have ${S.gold} gold.` : '') : t.b0 === 'lake' ? '' : 'Only land next to your border can be bought.';
     else if (j && !techOk(j)) note = `${JOBS[j].who[0].toUpperCase()}${JOBS[j].who.slice(1)}s need ${TECH.find((q) => q.id === JOBS[j].tech).name} from the tech tree.`;
     else if (slots) note = crew.length >= slots ? 'This tile is full.' : free ? `${free} idle at the dock.` : `No one is idle. Hire for ${hireCost()} gold, or move someone.`;
+    if (slots && !inSeason(j)) note = { plant: winter() ? 'The ground is frozen. Planting starts again in spring.' : 'Saplings wilt if planted in summer. Planting starts again in autumn.',
+      burn: 'Rot only burns in the dry seasons, summer and autumn.' }[j] || 'The ground is frozen until spring.';
     $('tNote').textContent = note;
   }
   $('tClose').addEventListener('click', () => select(null));
