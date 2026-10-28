@@ -431,10 +431,12 @@
   const cutOf = (t) => { const c = S.camps.find((k) => k.type === 'wood' && inRange(k, t)); return c ? c.cut : 'last'; };
   const cutLimit = (t) => { const k = cutOf(t); return k === 'third' ? Math.ceil(WOOD[t.cover] / 3) : k === 'dead' ? Infinity : 0; };
   // What this worker should do next: the highest-priority task their crew can do now, nearest first.
-  // Work in the home camp's range first; with nothing there, walk out to anything else of theirs in the valley.
-  function pickTask(w, D, wide) {
-    const home = homeOf(w), seen = cells.filter((t) => t.own && t.seen && D.cost.has(t) && (wide || inRange(home, t)));
-    const d = (t) => D.cost.get(t), out = [];
+  // Work in the home camp's range comes first, but they walk out for anything more needed elsewhere on your land.
+  // Fishing and farming give way once the store holds plenty of food.
+  function pickTask(w, D) {
+    const home = homeOf(w), seen = cells.filter((t) => t.own && t.seen && D.cost.has(t));
+    const far = (t) => (inRange(home, t) ? 0 : 600), plenty = S.food > S.workers.length * 15 + S.keep.food;
+    const d = (t) => D.cost.get(t) + far(t), out = [];
     for (const role of rolesOf(w)) {
       if (role === 'land') {
         for (const t of seen) {
@@ -457,8 +459,8 @@
         for (const t of seen) {
           if (busy(t, w) >= 2 || t.rot) continue;
           const fish = (t.kind === 'beach' && t !== DOCK) || (t.kind === 'pond' && !winter()) || (t.kind === 'river' && t.river === 'clean');
-          if (fish) out.push({ t, role, job: 'fish', score: 800 - d(t) });
-          else if (has('farms') && !winter() && isLand(t) && t.plan === 'field' && ['grass', 'meadow'].includes(t.cover) && t.food >= 2) out.push({ t, role, job: 'farm', score: 1000 - d(t) });
+          if (fish) out.push({ t, role, job: 'fish', score: (plenty ? 100 : 800) - d(t) });
+          else if (has('farms') && !winter() && isLand(t) && t.plan === 'field' && ['grass', 'meadow'].includes(t.cover) && t.food >= 2) out.push({ t, role, job: 'farm', score: (plenty ? 150 : 1000) - d(t) });
         }
       }
     }
@@ -475,7 +477,7 @@
     const D = dijkstra(w.at), home = campTile(homeOf(w));
     if (w.carry && w.carry.kind !== 'water') return go(w, D, home, 'deliver'); // every camp's store is the valley's store
     if (w.carry && w.carry.kind === 'water' && w.task) return go(w, D, w.task, 'pour');
-    const pick = pickTask(w, D) || pickTask(w, D, true);
+    const pick = pickTask(w, D);
     if (pick) {
       w.task = pick.t; w.taskJob = pick.job; w.taskRole = pick.role;
       if (pick.job === 'water') { // fetch water from the nearest clean source first
