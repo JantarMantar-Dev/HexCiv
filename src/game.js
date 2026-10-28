@@ -92,6 +92,7 @@
   };
   // x, y place the node on the tree (percent of the board); one column per branch
   const COLX = [9, 25, 41, 58, 75, 91], ROWY = [11, 35, 59, 83];
+  const BRANCHES = ['Soil', 'Water', 'Plants', 'Forest', 'Clean-up', 'Food and trade'];
   const TECH = [
     { id: 'hoes', name: 'Hoes', icon: 'hoe', cost: 30, logs: 5, col: 0, row: 0, text: 'Loosening soil takes half the time. Until then the crew digs with sticks.' },
     { id: 'compost', name: 'Compost heap', icon: 'compost', cost: 50, food: 20, col: 0, row: 1, needs: 'hoes', text: 'The land crew can compost: 4 food in scraps makes a tile two steps richer at once.' },
@@ -1157,7 +1158,7 @@
     'Beach': 'Fishers catch fish here, all year round. Water carriers fill buckets here.',
     'Pond': 'Fishers catch fish here, except in winter. Water carriers fill buckets here.',
   };
-  const STALL_TEXT = { season: 'Waiting for the right season.', tech: 'Needs a tech from the tech tree.', stock: 'Waiting for stock at the dock.', hands: 'No camp works this hex. Build a Gardener\'s hut nearby, or hire at the dock.' };
+  const STALL_TEXT = { season: 'Waiting for the right season.', tech: 'Locked: needs an upgrade from the tech tree.', stock: 'Waiting for stock at the dock.', hands: 'No camp works this hex. Build a Gardener\'s hut nearby, or hire at the dock.' };
   const PLAN_ICON = { forest: 'forestry', field: 'farms', rest: 'snow', marsh: 'drop', river: 'reeds' };
   const CUT_TEXT = { last: 'Cut to the last log', third: 'Leave a third', dead: 'Deadwood only' };
   let ringOpen = true, ringMenu = 'main', placing = null; // the action bar for the selected hex
@@ -1278,7 +1279,8 @@
       if (!t.own) note = canOwn(t) ? '' : t.kind === 'lake' ? '' : 'Only land next to your border can be bought.';
       else if (why) {
         const j = landStep(t);
-        note = why === 'tech' ? `${JOB[j].name} needs ${TECH.find((q) => q.id === JOB[j].tech).name}${j === 'reedbed' ? ' and a healed marsh' : ''}.`
+        const tq = TECH.find((q) => q.id === JOB[j].tech), tn = tq.needs && !has(tq.needs) ? `, after ${TECH.find((q) => q.id === tq.needs).name}` : '';
+        note = why === 'tech' ? `Locked: ${lower(JOB[j].name)} needs the ${tq.name} upgrade (Tech, ${BRANCHES[tq.col]} branch${tn}, ${tq.cost}g)${j === 'reedbed' ? ' and a healed marsh' : ''}.${j === 'sow' ? ' Until then, grass creeps in on its own from living land next to it.' : ''}`
           : why === 'season' ? `${JOB[j].name}: ${JOB[j].seasons.map((x) => SEASONS[x].toLowerCase()).join(', ')} only.`
             : why === 'stock' ? `${JOB[j].name} needs ${Object.entries(JOB[j].uses).map(([k, n]) => `${n} ${k}`).join(', ')} at the dock.` : STALL_TEXT[why];
       } else if (!cp && helpable(t)) note = 'Tap the hex again to lend a hand.';
@@ -1396,7 +1398,7 @@
   $('treeBtn').addEventListener('click', () => { drawTree(); show('tree'); });
   $('treeBack').addEventListener('click', () => show('game'));
   const graph = $('graph');
-  graph.insertAdjacentHTML('beforeend', ['Soil', 'Water', 'Plants', 'Forest', 'Clean-up', 'Food and trade'].map((n, i) => `<span class="branch" style="left:${COLX[i]}%">${n}</span>`).join('')
+  graph.insertAdjacentHTML('beforeend', BRANCHES.map((n, i) => `<span class="branch" style="left:${COLX[i]}%">${n}</span>`).join('')
     + TECH.map((t) => `<button class="node" id="n-${t.id}" style="left:${t.x}%;top:${t.y}%" aria-label="${t.name}"><img alt="" src="${icon(t.icon)}"><span>${t.name}</span></button>`).join(''));
   $('links').innerHTML = TECH.filter((t) => t.needs).map((t) => { const p = TECH.find((q) => q.id === t.needs); return `<line id="l-${t.id}" x1="${p.x}" y1="${p.y}" x2="${t.x}" y2="${t.y}" vector-effect="non-scaling-stroke" style="stroke-width:4px"/>`; }).join('');
   function drawTree() {
