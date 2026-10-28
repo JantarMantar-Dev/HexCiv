@@ -1113,7 +1113,7 @@
     if (painting && hover && hover.own && !hover.plan && planFits(hover, painting) && e.buttons) setPlan(hover, painting);
     if (!hover || e.pointerType === 'touch' || hover === sel) { tip.style.display = 'none'; return; }
     const t = hover;
-    tip.innerHTML = `<b>${t.seen ? nameOf(t) : 'Unexplored'}</b><span>${t.seen ? tileLine(t) : 'Under fog'}</span>`;
+    tip.innerHTML = `<b>${t.seen ? nameOf(t) : 'Unexplored'} <small class="coord">hex ${t.c},${t.r}</small></b><span>${t.seen ? tileLine(t) : 'Under fog'}</span>`;
     tip.style.display = 'block';
     let lx = e.clientX + 16, ly = e.clientY + 16;
     if (lx + tip.offsetWidth > innerWidth - 8) lx = e.clientX - tip.offsetWidth - 12;
@@ -1256,7 +1256,7 @@
     panel.hidden = !t;
     if (!t) return;
     const dock = t === DOCK, name = nameOf(t), cp = campAt(t);
-    $('tName').textContent = name;
+    $('tName').innerHTML = `${name.replace(/</g, '&lt;')} <small class="coord">hex ${t.c},${t.r}</small>`;
     let info = cp ? CAMPS[cp.type].text : DESC[name] || `${B[t.b0].name}.`;
     if (isLand(t) && TREES.has(t.cover)) info += ` ${t.wood} logs standing.`;
     if (t.dead) info += ` ${t.dead} logs left.`;
