@@ -6,7 +6,7 @@
   const B = X.BIOMES, MAP = X.MAPS.world, RIVER = MAP.river;
 
   // ---------- tuning ----------
-  const SEASON_LEN = 60;              // seconds per season
+  const SEASON_LEN = 150;             // seconds per season: a 10-minute year
   const SEASONS = ['Spring', 'Summer', 'Autumn', 'Winter'];
   const WINTER = 3;
   const CHOP_TIME = 4;                // seconds to cut one log by hand; Axes halve it
@@ -15,9 +15,9 @@
   const SNOW = 1.6;                   // winter walking slowdown
   const RAFT_STEP = 0.7;              // seconds per river tile
   const LOG_PRICE = 2, PLANK_PRICE = 6, MILL_TIME = 3;
-  const UPKEEP = 2, EAT = 1;          // gold and food per worker per season
+  const UPKEEP = 5, EAT = 2;          // gold and food per worker per season
   const SLOW = 0.5;                   // speed of a worker who is unpaid or hungry
-  const REGROW = 70;                  // seconds for cut land to grow back one stage (outside winter)
+  const REGROW = 180;                 // seconds for cut land to grow back one stage (outside winter)
   const hireCost = () => 15 + 5 * Math.max(0, S.workers.length - 1);
   const WOOD = { forest: { wood: 18, next: 'pines' }, pines: { wood: 12, next: 'grass' }, grove: { wood: 10, next: 'grass' } };
   const FISH = new Set(['beach', 'pond']);
@@ -35,8 +35,8 @@
     { id: 'mining', name: 'Mining', icon: 'mining', x: 36, y: 88, needs: 'stone', soon: true, text: 'Mines in the mountains for ore and coal. Coming in a later prototype.' },
   ];
   const CONTRACTS = [
-    { item: 'logs', n: 25, reward: 60, reveal: true, text: 'The harbourmaster wants 25 logs for a new pier.' },
-    { item: 'planks', n: 12, reward: 150, text: 'A shipwright wants 12 planks for a riverboat.' },
+    { item: 'logs', n: 40, reward: 100, reveal: true, text: 'The harbourmaster wants 40 logs for a new pier.' },
+    { item: 'planks', n: 30, reward: 250, text: 'A shipwright wants 30 planks for a riverboat.' },
   ];
 
   // ---------- map helpers ----------
