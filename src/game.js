@@ -1283,11 +1283,12 @@
       if (!t.own) note = canOwn(t) ? '' : t.kind === 'lake' ? '' : 'Only land next to your border can be bought.';
       else if (why) {
         const j = landStep(t);
-        const tq = TECH.find((q) => q.id === JOB[j].tech), tn = tq.needs && !has(tq.needs) ? `, after ${TECH.find((q) => q.id === tq.needs).name}` : '';
+        const tq = why === 'tech' && TECH.find((q) => q.id === JOB[j].tech), tn = tq && tq.needs && !has(tq.needs) ? `, after ${TECH.find((q) => q.id === tq.needs).name}` : '';
         note = why === 'tech' ? `Locked: ${lower(JOB[j].name)} needs the ${tq.name} upgrade (${BRANCHES[tq.col]} branch${tn})${j === 'reedbed' ? ' and a healed marsh' : ''}.${j === 'sow' ? ' Until then, grass creeps in on its own from living land next to it.' : ''}`
           : why === 'season' ? `${JOB[j].name}: ${JOB[j].seasons.map((x) => SEASONS[x].toLowerCase()).join(', ')} only.`
             : why === 'stock' ? `${JOB[j].name} needs ${Object.entries(JOB[j].uses).map(([k, n]) => `${n} ${k}`).join(', ')} at the dock.` : STALL_TEXT[why];
-      } else if (!cp && helpable(t)) note = 'Tap the hex again to lend a hand.';
+      } else if (t.plan && t.dead && isLand(t)) note = reachedBy(t, 'wood') ? 'Dead trees come off first. Woodcutters clear them, then the land crew starts. Tap again to help.' : 'Dead trees come off first, and no woodcutter camp is near. Idle woodcutters walk out to it; a woodcutter\'s tent within 2 hexes does it much faster. Tap again to help.';
+      else if (!cp && helpable(t)) note = 'Tap the hex again to lend a hand.';
       else if (t.own && !cp && plansFor(t).length && !t.plan) note = 'Pick a plan or build a camp from the ring.';
     }
     const lockId = !needWhy && why === 'tech' && landStep(t) && JOB[landStep(t)].tech;
