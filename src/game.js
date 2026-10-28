@@ -436,8 +436,10 @@
   function pickTask(w, D) {
     const home = homeOf(w), seen = cells.filter((t) => t.own && t.seen && D.cost.has(t));
     const far = (t) => (inRange(home, t) ? 0 : 600), plenty = S.food > S.workers.length * 15 + S.keep.food;
-    const d = (t) => D.cost.get(t) + far(t), out = [];
-    for (const role of rolesOf(w)) {
+    const d = (t) => D.cost.get(t) + far(t), out = [], roles = rolesOf(w);
+    // with nothing of their own trade to do, anyone lends the land crew a hand
+    for (let role of roles.includes('land') ? roles : [...roles, 'spare']) {
+      if (role === 'spare') { if (out.length) break; role = 'land'; }
       if (role === 'land') {
         for (const t of seen) {
           const j = landStep(t);
@@ -1168,6 +1170,7 @@
     'Beach': 'Fishers catch fish here, all year round. Water carriers fill buckets here.',
     'Pond': 'Fishers catch fish here, except in winter. Water carriers fill buckets here.',
   };
+  const STOCK_HINT = { plant: ' Saplings are raised at a Seed bed: build one from the action bar on any of your land.', sow: ' Seed is gathered from forests in autumn, or bought from the trader\'s boat.', block: ' Woodcutters bring in logs.', reedbed: ' Woodcutters bring in logs.', compost: ' Fishers bring in food.' };
   const STALL_TEXT = { season: 'Waiting for the right season.', tech: 'Locked: needs an upgrade from the tech tree.', stock: 'Waiting for stock at the dock.', nohands: 'Nobody in your crew works the land. Move someone back into the dock, or build a Gardener\'s tent next to this hex and hire into it.', hands: 'No camp is close to this hex. Idle hands walk out to it, but a Gardener\'s tent nearby works it much faster.' };
   const PLAN_ICON = { forest: 'forestry', field: 'farms', rest: 'snow', marsh: 'drop', river: 'reeds' };
   const CUT_TEXT = { last: 'Cut to the last log', third: 'Leave a third', dead: 'Deadwood only' };
@@ -1237,7 +1240,7 @@
     S.camps.forEach((c) => { const ps = people(c); if (ps.length && ps.every((w) => !w.task && !w.carry && !w.path.length)) out.push([campTile(c), `The ${lower(campName(c))} is idle. ${idleWhy(c)}`]); });
     S.camps.forEach((c) => { if (c.type !== 'dock' && !people(c).length) out.push([campTile(c), `The ${lower(campName(c))} is empty. Hire someone into it.`]); });
     cells.forEach((t) => { if (t.own && t.rot && t.kind !== 'mine' && !reachedBy(t, 'land')) out.push([t, 'Rot on your land, and no camp in reach burns it.']); });
-    cells.forEach((t) => { const w = stall(t); if (w && w !== 'season') out.push([t, STALL_TEXT[w]]); });
+    cells.forEach((t) => { const w = stall(t); if (w && w !== 'season') out.push([t, w === 'stock' ? `Waiting for ${Object.keys(JOB[landStep(t)].uses).join(' and ')}.${STOCK_HINT[landStep(t)] || ''}` : STALL_TEXT[w]]); });
     if (S.boat > 0 && !has('trade') && (surplus('logs') || surplus('food'))) out.push([DOCK, 'The trader\'s boat is in and you have surplus to sell.']);
     return out;
   }
@@ -1295,7 +1298,7 @@
         const tq = why === 'tech' && TECH.find((q) => q.id === JOB[j].tech), tn = tq && tq.needs && !has(tq.needs) ? `, after ${TECH.find((q) => q.id === tq.needs).name}` : '';
         note = why === 'tech' ? `Locked: ${lower(JOB[j].name)} needs the ${tq.name} upgrade (${BRANCHES[tq.col]} branch${tn})${j === 'reedbed' ? ' and a healed marsh' : ''}.${j === 'sow' ? ' Until then, grass creeps in on its own from living land next to it.' : ''}`
           : why === 'season' ? `${JOB[j].name}: ${JOB[j].seasons.map((x) => SEASONS[x].toLowerCase()).join(', ')} only.`
-            : why === 'stock' ? `${JOB[j].name} needs ${Object.entries(JOB[j].uses).map(([k, n]) => `${n} ${k}`).join(', ')} at the dock.` : STALL_TEXT[why];
+            : why === 'stock' ? `${JOB[j].name} needs ${Object.entries(JOB[j].uses).map(([k, n]) => `${n} ${k}`).join(', ')} at the dock.${STOCK_HINT[j] || ''}` : STALL_TEXT[why];
       } else if (t.plan && t.dead && isLand(t)) note = reachedBy(t, 'wood') ? 'Dead trees come off first. Woodcutters clear them, then the land crew starts. Tap again to help.' : 'Dead trees come off first, and no woodcutter camp is near. Idle woodcutters walk out to it; a woodcutter\'s tent within 2 hexes does it much faster. Tap again to help.';
       else if (!cp && helpable(t)) note = 'Tap the hex again to lend a hand.';
       else if (t.own && !cp && plansFor(t).length && !t.plan) note = 'Pick a plan or build a camp from the ring.';
