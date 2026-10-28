@@ -340,7 +340,7 @@
     const j = landStep(t);
     if (!j) return null;
     if (JOB[j].tech && !has(JOB[j].tech)) return 'tech';
-    if (j === 'reedbed' && !cells.some((o) => o.own && o.kind === 'marsh' && o.marsh === 'healed')) return 'tech';
+    if (j === 'reedbed' && !cells.some((o) => o.own && o.kind === 'marsh' && o.marsh === 'healed')) return 'marsh';
     if (!inSeason(j)) return 'season';
     if (!stocked(j)) return 'stock';
     if (!reachedBy(t, 'land')) return S.workers.some((w) => rolesOf(w).includes('land')) ? 'hands' : 'nohands';
@@ -1046,7 +1046,7 @@
       if (!t.own || !t.plan) return;
       const p = X.at(t.c, t.r), fx0 = p.x + 7, fy = p.y + X.FY + 3;
       px(fx0, fy, 1, 7, '#3f2b31'); px(fx0 + 1, fy, 4, 3, PLANS[t.plan].color);
-      const why = stall(t); if (why) { const bx2 = p.x + 19, by = p.y + X.FY + 3; px(bx2 - 1, by - 2, 7, 8, 'rgba(20,29,38,0.75)'); MARK[why === 'nohands' ? 'hands' : why](bx2, by); }
+      const why = stall(t); if (why) { const bx2 = p.x + 19, by = p.y + X.FY + 3; px(bx2 - 1, by - 2, 7, 8, 'rgba(20,29,38,0.75)'); MARK[{ nohands: 'hands', marsh: 'stock' }[why] || why](bx2, by); }
     });
     const sc = sel && campAt(sel);
     if (sc) cells.forEach((t) => { if (inRange(sc, t) && t.seen) { const p = X.at(t.c, t.r); sx.drawImage(rangeHex, p.x, p.y + X.FY); } });
@@ -1171,7 +1171,7 @@
     'Pond': 'Fishers catch fish here, except in winter. Water carriers fill buckets here.',
   };
   const STOCK_HINT = { plant: ' Saplings are raised at a Seed bed: build one from the action bar on any of your land.', sow: ' Seed is gathered from forests in autumn, or bought from the trader\'s boat.', block: ' Woodcutters bring in logs.', reedbed: ' Woodcutters bring in logs.', compost: ' Fishers bring in food.' };
-  const STALL_TEXT = { season: 'Waiting for the right season.', tech: 'Locked: needs an upgrade from the tech tree.', stock: 'Waiting for stock at the dock.', nohands: 'Nobody in your crew works the land. Move someone back into the dock, or build a Gardener\'s tent next to this hex and hire into it.', hands: 'No camp is close to this hex. Idle hands walk out to it, but a Gardener\'s tent nearby works it much faster.' };
+  const STALL_TEXT = { marsh: 'A reed bed is planted with reeds from a healed marsh of yours, and you have none yet. Buy a marsh hex at the edge of your land, give it the Heal marsh plan so the crew blocks its ditches (10 logs), and the next spring flood brings it back to life.', season: 'Waiting for the right season.', tech: 'Locked: needs an upgrade from the tech tree.', stock: 'Waiting for stock at the dock.', nohands: 'Nobody in your crew works the land. Move someone back into the dock, or build a Gardener\'s tent next to this hex and hire into it.', hands: 'No camp is close to this hex. Idle hands walk out to it, but a Gardener\'s tent nearby works it much faster.' };
   const PLAN_ICON = { forest: 'forestry', field: 'farms', rest: 'snow', marsh: 'drop', river: 'reeds' };
   const CUT_TEXT = { last: 'Cut to the last log', third: 'Leave a third', dead: 'Deadwood only' };
   let ringOpen = true, ringMenu = 'main', placing = null; // the action bar for the selected hex
