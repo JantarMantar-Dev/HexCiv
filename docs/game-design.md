@@ -99,6 +99,34 @@ The yearly puzzle is to stock enough food and gold before winter to keep every w
 - Too much clearing near the river dries the soil, and desert spreads. This is a late-game pressure, not part of the
   first prototype.
 
+## Prototype version 5: The Valley Unfolds
+
+`play.html` follows the "Making the Valley Unfold" doc: every question a player had to ask in v4 now has an answer on
+screen. v4 is frozen in `archive/8-prototype-v4`; the land simulation, seasons, rot, camps and the action bar carry over.
+
+- **One crew.** Trades are gone. Every worker takes the most needed job on your land, nearest first: rot, then deadwood,
+  then plan steps by priority, felling when the woodpile (or a waiting plan) needs logs, fishing when food runs low,
+  watering in summer, seed in autumn. Workers go back to whatever matters most after each catch or log.
+- **Camps speed work up, they don't gate it.** A camp houses people and makes one kind of work twice as fast within
+  its range: woodcutter's tent (clearing, felling), gardener's tent (land work), jetty (fishing, farming), well
+  (watering), fire watch (burning rot). The Seed bed raises saplings; the dock is home and the store.
+- **Five chapters.** A goal line under the season names one thing to do, and a gold hex with a bobbing arrow shows
+  where. Selecting it shows a whisper in the tile panel. Each chapter unlocks the next layer:
+  1. *Warm hearth*: clear the deadwood by the dock (about a minute).
+  2. *First green*: turn bare ground into grassland with a Field plan. Unlocks the tech tree.
+  3. *Shelter*: grow the crew to 4. Unlocks hiring, camps and the trader's boat.
+  4. *First forest*: grow a pine stand from saplings. Unlocks Forest and Rest plans, the Seed bed and the well; the
+     trader leaves 6 seed.
+  5. *Living water*: heal a marsh or clean a river. Unlocks marsh and river plans and the fire watch.
+  Tech nodes, plans and camps from later chapters stay hidden until their chapter.
+- **Fix-it chains.** A hex's panel lists what stands between it and its next step, in order, each with a button where
+  there is one: learn the missing upgrade, build a Seed bed on the best free hex (or buy one for it), buy seed or logs
+  from the boat. "Needs you" groups hexes by blocker.
+- **Visible time.** Work, deadwood and growth show a bar under the hex and in the panel, with an ETA that counts the
+  seasons ahead (winter pauses growth). Season-locked steps say when their season starts.
+- **Map feedback.** Stall markers are twice the size; idle workers show a "z z" bubble.
+- **Faster first forest.** Saplings can be planted in summer too; seedlings take 100 growth-seconds and young wood 150.
+
 ## Prototype version 4: Playing on the Hex
 
 `play.html` moves every decision back onto the map, following the "Playing on the Hex" doc. v3 is frozen in

@@ -51,7 +51,7 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 .season span { color: var(--muted); font-size: 13px; }
 .bar { height: 6px; background: var(--deep0); border: 1px solid var(--ink); position: relative; overflow: hidden; }
 .bar i { position: absolute; inset: 0 auto 0 0; }
-.notes { position: absolute; left: 50%; top: 76px; transform: translateX(-50%); width: min(340px, calc(100% - 300px)); display: grid; gap: 6px; pointer-events: none; }
+.notes { position: absolute; left: 50%; top: 132px; transform: translateX(-50%); width: min(340px, calc(100% - 300px)); display: grid; gap: 6px; pointer-events: none; }
 .notice { padding: 6px 10px; font-size: 13.5px; line-height: 1.35; }
 .notice.bad { background: #3a1d26; box-shadow: inset 2px 2px 0 var(--rose-lo), inset -2px -2px 0 #22121a, 0 3px 0 rgba(20, 29, 38, .45); color: #ffd9de; }
 .side { position: absolute; right: var(--gutter-r); top: 12px; display: grid; gap: 8px; justify-items: end; }
@@ -105,6 +105,21 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 .node.ready::after { content: ""; position: absolute; top: -6px; right: -6px; width: 10px; height: 10px; background: var(--gold); border: 2px solid var(--ink); }
 .node.locked img, .node.soon img { filter: grayscale(1) brightness(.6); }
 .node.soon { border-style: dashed; }
+.node.hidden { display: none; }
+.tree .more { margin: 4px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
+.goal { display: grid; gap: 1px; text-align: left; padding: 6px 10px; cursor: pointer; font: inherit; color: var(--cream); border: 0; box-shadow: inset 2px 2px 0 #f4e98a, inset -2px -2px 0 #b5932f, 0 3px 0 rgba(20, 29, 38, .45); }
+.goal small { font-family: var(--display); font-size: 11px; color: var(--gold); letter-spacing: .06em; text-transform: uppercase; }
+.goal b { font-family: var(--display); font-weight: 600; font-size: 15px; }
+.goal:hover b { color: var(--gold); }
+.whisper { color: var(--gold); font-size: 13.5px; border-left: 3px solid var(--gold); padding-left: 8px; }
+.fixes { display: grid; gap: 8px; }
+.fix { display: grid; gap: 4px; font-size: 13px; }
+.fix p { color: var(--cream); }
+.pbar { position: relative; height: 16px; background: var(--deep0); border: 1px solid var(--ink); }
+.pbar i { position: absolute; inset: 0 auto 0 0; background: var(--leaf); }
+.pbar span { position: relative; display: block; font-size: 11.5px; line-height: 16px; padding-left: 6px; color: var(--cream); text-shadow: 0 1px 0 var(--ink); }
+.fixbtn { justify-self: start; font-size: 13px; }
+.fixbtn.off { opacity: .7; }
 @keyframes pulse { 50% { box-shadow: inset 2px 2px 0 var(--gold), inset -2px -2px 0 var(--deep0), 0 3px 0 rgba(0, 0, 0, .4); } }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin: 0; }
 .pop { width: min(320px, 100%); box-sizing: border-box; padding: 20px 18px 16px; display: grid; gap: 10px; justify-items: center; text-align: center; }
@@ -239,6 +254,7 @@ button.chip-step.locked { font: inherit; font-size: 12.5px; color: var(--ink); b
   <div class="res" id="res"></div>
   <div class="top">
     <div class="panel season"><div class="row"><b id="season">Spring</b><span id="year">Year 1</span></div><div class="ribbon" aria-hidden="true"><div id="ribbon"></div><i id="nowMark"></i></div></div>
+    <button class="panel goal" id="goal" hidden aria-label="Show the chapter's goal on the map"></button>
   </div>
   <div class="notes" id="notes" aria-live="polite"></div>
   <div class="side">
@@ -263,7 +279,9 @@ button.chip-step.locked { font: inherit; font-size: 12.5px; color: var(--ink); b
       <p id="tInfo"></p>
       <div class="vals" id="tVals"></div>
       <div class="campinfo" id="tCamp" hidden></div>
+      <p class="whisper" id="tWhisper" hidden></p>
       <div class="steps" id="tSteps"></div>
+      <div class="fixes" id="tFix" hidden></div>
       <div class="dock" id="tDock" hidden>
         <p id="dockBoat"></p>
         <div class="keep"><span>Keep logs</span><button class="btn mini" data-keep="logs:-5">−</button><b id="keepLogs"></b><button class="btn mini" data-keep="logs:5">+</button></div>
@@ -296,6 +314,7 @@ button.chip-step.locked { font: inherit; font-size: 12.5px; color: var(--ink); b
   <div class="panel tree">
     <header><button class="btn" id="treeBack">◀ Back</button><h2>Tech tree</h2><span class="gold"><img class="ic" alt="" data-ic="coin"><span id="treeGold">0</span></span></header>
     <div class="graph" id="graph"><svg id="links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+    <p class="more" id="treeMore"></p>
     <p class="legend"><span>Green: owned</span><span>Gold dot: you can buy it</span><span>Grey: needs the upgrade above</span><span>Dashed: coming later</span><span>Gold outline: the way to a locked step</span></p>
   </div>
 </div>

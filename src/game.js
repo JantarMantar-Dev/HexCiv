@@ -1,9 +1,9 @@
-// HexCiv v4, Restore the Valley, played on the hex. Every land tile has soil (hard to loose), food (dead to rich),
-// water (dry to wet) and a cover (bare, seedlings, young wood, forest, clover, grass). Tapping a hex opens a ring of
-// actions that fit it: buy it, give it a plan (Forest, Field, Rest), build a camp on it. Camps hold the workers; each
-// works the hexes in its range and grows from tent to hut to house as the land around it heals. Tapping a hex again
-// lends a hand. Living land earns gold over time. Nothing on screen states a goal; the run ends when the last worker dies.
-// See the "Playing on the Hex" and "Healing the Land" design docs and docs/game-design.md. v1 to v3 are in archive/.
+// HexCiv v5, Restore the Valley, unfolding. Every land tile has soil (hard to loose), food (dead to rich), water
+// (dry to wet) and a cover (bare, seedlings, young wood, forest, clover, grass). Tapping a hex opens an action bar:
+// buy it, give it a plan (Forest, Field, Rest), build a camp on it. One crew does whatever is most needed; camps house
+// them and make the work near them twice as fast. A plan lays out its whole chain on the hex, with a button for every
+// missing link. The valley unfolds in five chapters, each asked for by a glowing hex. Living land earns gold over time.
+// The run ends when the last worker dies. See the "Making the Valley Unfold" design doc. v1 to v4 are in archive/.
 (() => {
   const X = buildHexTiles(), icon = buildHudIcons(), B = X.BIOMES, C = X.C;
 
@@ -20,7 +20,7 @@
   const STARVE = 120, FREEZE = 75, SICKEN = 60;
   const WOOD = { forest: 120, pines: 60, grove: 50 }, DEADWOOD = 30, NEW_STAND = 20;
   const REGROW = 30;                  // a rested stand grows one log this often in summer (faster in spring)
-  const SEEDLING_GROW = 450, YOUNG_GROW = 900, OLD_GROW = 1800, CLOVER_GROW = 450, GRASS_CREEP = 180, STUMP_ROT = 1200;
+  const SEEDLING_GROW = 100, YOUNG_GROW = 150, OLD_GROW = 1800, CLOVER_GROW = 150, GRASS_CREEP = 120, STUMP_ROT = 1200; // growth-seconds at a season's rate
   const DRY = 45, WILT = 40;          // summer: a tile loses a water level every DRY seconds; dry plants wilt after WILT
   const NURSERY = 30;                 // seconds for the nursery to raise one seed into a sapling
   const BOAT_STAY = 60;               // the trader's boat stays this long at the start of spring, summer and autumn
@@ -30,23 +30,28 @@
   const MARKET = 6;                   // between boats the dock's market stall sells one unit of surplus this often
   // gold a minute from each living hex you own, by what grows there; half for land not yet fully alive
   const YIELD = { grass: 3, clover: 3, meadow: 5, seedlings: 1, young: 3, pines: 4, forest: 6, grove: 6, pond: 3, beach: 2, river: 3, marsh: 4 };
-  // Camps: built on a hex, they house workers and work the hexes within their range. Each grows through three levels.
+  // Camps: built on a hex, they house the crew and make one kind of work near them twice as fast. Anyone does any job;
+  // a camp never decides who may work, only where work goes quicker. Each grows through three levels. `ch` = the
+  // chapter in which it first appears.
   const CAMPS = {
-    dock: { name: ['Dock camp', 'Hamlet', 'Village'], roles: ['land', 'wood', 'food'], range: 2, beds: [3, 6, 10], icon: 'pop', hue: '#f4f6ea',
-      text: 'Home. Its people do a bit of everything nearby: burn rot, work the land, clear deadwood, fish. A bigger settlement keeps warmer in winter and draws more trade.' },
-    wood: { name: ['Woodcutter\'s tent', 'Woodcutter\'s hut', 'Woodcutter\'s lodge'], roles: ['wood'], range: 2, beds: [2, 4, 6], cost: { gold: 15 }, icon: 'axe', hue: '#e2bd78', on: 'land',
-      text: 'Clears deadwood and fells standing wood in range. Choose how hard it cuts.' },
-    garden: { name: ['Gardener\'s tent', 'Gardener\'s hut', 'Gardener\'s house'], roles: ['land'], range: 2, beds: [2, 4, 6], cost: { gold: 20, logs: 5 }, icon: 'hoe', hue: '#9bcb3e', on: 'land',
-      text: 'Burns rot and works the plans in range: loosen, feed, plant, sow. Gathers seed in autumn, fells firewood in winter.' },
-    pier: { name: ['Fishing jetty', 'Fishing pier', 'Fish market'], roles: ['food'], range: 1, beds: [2, 4, 6], cost: { gold: 20, logs: 5 }, icon: 'fishing', hue: '#e8587d', on: 'water',
-      text: 'Fishes the water in range, and farms Field plans in range once you have Farms.' },
-    well: { name: ['Well', 'Water house', 'Water mill'], roles: ['water'], range: 2, beds: [2, 3, 4], cost: { gold: 25, logs: 10 }, icon: 'drop', hue: '#5f9edd', on: 'land',
-      text: 'Carriers draw water here and water plants in range through summer. Outside summer they help with the land.' },
-    nursery: { name: ['Seed bed', 'Nursery', 'Tree nursery'], roles: ['land'], range: 1, beds: [1, 2, 3], cost: { gold: 30, logs: 10 }, tech: 'nursery', icon: 'sapling', hue: '#3fae5a', on: 'land',
-      text: 'Raises seed into saplings, faster at each level. Its people plant around it.' },
-    watch: { name: ['Fire watch', 'Watch tower', 'Warden\'s hall'], roles: ['land'], range: 2, beds: [1, 2, 3], cost: { gold: 35, logs: 15 }, tech: 'ditchblock', icon: 'seal', hue: '#c0473f', on: 'land',
-      text: 'Rot reaching its range is held back for a season, every season. Its people burn rot.' },
+    dock: { name: ['Dock camp', 'Hamlet', 'Village'], boost: [], range: 2, beds: [3, 6, 10], icon: 'pop', hue: '#f4f6ea', ch: 1,
+      text: 'Home and the valley\'s store. A bigger settlement keeps warmer in winter and draws more trade.' },
+    wood: { name: ['Woodcutter\'s tent', 'Woodcutter\'s hut', 'Woodcutter\'s lodge'], boost: ['wood'], range: 2, beds: [2, 4, 6], cost: { gold: 15 }, icon: 'axe', hue: '#e2bd78', on: 'land', ch: 3,
+      text: 'Clearing deadwood and felling go twice as fast within its range. Houses two of your crew.' },
+    garden: { name: ['Gardener\'s tent', 'Gardener\'s hut', 'Gardener\'s house'], boost: ['land'], range: 2, beds: [2, 4, 6], cost: { gold: 20, logs: 5 }, icon: 'hoe', hue: '#9bcb3e', on: 'land', ch: 3,
+      text: 'Land work (burning rot, loosening, feeding, planting, sowing) goes twice as fast within its range. Houses two.' },
+    pier: { name: ['Fishing jetty', 'Fishing pier', 'Fish market'], boost: ['food'], range: 1, beds: [2, 4, 6], cost: { gold: 20, logs: 5 }, icon: 'fishing', hue: '#e8587d', on: 'water', ch: 3,
+      text: 'Fishing and farming go twice as fast within its range. Houses two.' },
+    well: { name: ['Well', 'Water house', 'Water mill'], boost: ['water'], range: 2, beds: [2, 3, 4], cost: { gold: 25, logs: 10 }, icon: 'drop', hue: '#5f9edd', on: 'land', ch: 4,
+      text: 'A place to fill buckets, and watering goes twice as fast within its range. Houses two.' },
+    nursery: { name: ['Seed bed', 'Nursery', 'Tree nursery'], boost: [], range: 1, beds: [1, 2, 3], cost: { gold: 30, logs: 10 }, icon: 'sapling', hue: '#3fae5a', on: 'land', ch: 4,
+      text: 'Turns seed into saplings outside winter, faster at each level. Forest plans plant the saplings.' },
+    watch: { name: ['Fire watch', 'Watch tower', 'Warden\'s hall'], boost: ['burn'], range: 2, beds: [1, 2, 3], cost: { gold: 35, logs: 15 }, icon: 'seal', hue: '#c0473f', on: 'land', ch: 5,
+      text: 'Rot reaching its range is held back for a season, and burning rot goes twice as fast near it.' },
   };
+  // what kind of work each job is, for camp speed-ups, skill stars and the tool a worker holds
+  const CAT = { loosen: 'land', mulch: 'land', compost: 'land', plant: 'land', sow: 'land', pull: 'land', burn: 'land', block: 'land', reedbed: 'land', seed: 'land',
+    clear: 'wood', fell: 'wood', fish: 'food', farm: 'food', water: 'water' };
   const LEVEL_UP = [null, { gold: 25, logs: 15, living: 3 }, { gold: 60, logs: 30, living: 6 }];      // camps: needs living hexes in range
   const DOCK_UP = [null, { gold: 50, logs: 30, alive: 8 }, { gold: 150, logs: 60, alive: 20 }];       // the dock: needs living hexes in the valley
   const DOCK_YIELD = [10, 20, 35], DOCK_WARM = [1, 1.5, 2];  // a bigger settlement earns more and burns fewer logs in winter
@@ -70,18 +75,12 @@
     loosen: { name: 'Loosen soil', seasons: [0, 1, 2], work: 25 },
     mulch: { name: 'Mulch', seasons: [0, 1, 2, 3], work: 15 },
     compost: { name: 'Compost', seasons: [0, 1, 2], work: 20, tech: 'compost', uses: { food: 4 } },
-    plant: { name: 'Plant saplings', seasons: [0, 2], work: 15, tech: 'nursery', uses: { saplings: 1 } },
+    plant: { name: 'Plant saplings', seasons: [0, 1, 2], work: 15, uses: { saplings: 1 } },
     sow: { name: 'Sow clover', seasons: [0, 2], work: 15, tech: 'clover', uses: { seed: 2 } },
     pull: { name: 'Pull stumps', seasons: [0, 1, 2], work: 30, tech: 'stumps' },
     burn: { name: 'Burn rot', seasons: [0, 1, 2], work: 30 },
     block: { name: 'Block ditches', seasons: [0, 1, 2], work: 40, tech: 'ditchblock', uses: { logs: 10 } },
     reedbed: { name: 'Build a reed bed', seasons: [0, 1, 2], work: 60, tech: 'reeds', uses: { logs: 15 } },
-  };
-  const ROLES = {
-    land: { name: 'Land crew', icon: 'hoe', hue: '#9bcb3e' },
-    water: { name: 'Water carriers', icon: 'drop', hue: '#5f9edd' },
-    wood: { name: 'Woodcutters', icon: 'axe', hue: '#e2bd78' },
-    food: { name: 'Fishers and farmers', icon: 'fishing', hue: '#e8587d' },
   };
   const PLANS = {
     forest: { name: 'Forest', color: '#3fae5a' },
@@ -94,28 +93,28 @@
   const COLX = [9, 25, 41, 58, 75, 91], ROWY = [11, 35, 59, 83];
   const BRANCHES = ['Soil', 'Water', 'Plants', 'Forest', 'Clean-up', 'Food and trade'];
   const TECH = [
-    { id: 'hoes', name: 'Hoes', icon: 'hoe', cost: 30, logs: 5, col: 0, row: 0, text: 'Loosening soil takes half the time. Until then the crew digs with sticks.' },
-    { id: 'compost', name: 'Compost heap', icon: 'compost', cost: 50, food: 20, col: 0, row: 1, needs: 'hoes', text: 'The land crew can compost: 4 food in scraps makes a tile two steps richer at once.' },
-    { id: 'farms', name: 'Farms', icon: 'farms', cost: 80, col: 0, row: 2, needs: 'compost', text: 'The food crew farms grassland on Field plans, except in winter. Every harvest tires the soil.' },
-    { id: 'yokes', name: 'Yokes', icon: 'drop', cost: 30, logs: 5, col: 1, row: 0, text: 'Water carriers bring two buckets a trip.' },
-    { id: 'swales', name: 'Swales', icon: 'hoe', cost: 60, col: 1, row: 1, needs: 'yokes', text: 'Shallow ditches catch spring rain: your land dries half as fast in summer.' },
-    { id: 'ditches', name: 'Ditches', icon: 'dam', cost: 100, logs: 20, col: 1, row: 2, needs: 'swales', text: 'Land next to a clean river or pond never dries below damp.' },
-    { id: 'dam', name: 'Dam breaking', icon: 'dam', col: 1, row: 3, needs: 'ditches', soon: true, text: 'Break the old dam so the dry riverbed fills. Coming in a later prototype.' },
-    { id: 'seeds', name: 'Seed gathering', icon: 'seed', cost: 20, col: 2, row: 0, text: 'In autumn the land crew gathers seed from living forests. Seed is kept at the dock.' },
-    { id: 'nursery', name: 'Nursery', icon: 'sapling', cost: 40, col: 2, row: 1, needs: 'seeds', text: 'You can build a Seed bed camp, which raises seed into saplings outside winter. Forest plans need saplings to plant.' },
-    { id: 'clover', name: 'Clover', icon: 'farms', cost: 40, col: 2, row: 2, needs: 'seeds', text: 'Field plans sow clover with seed. Clover feeds the soil as it grows and turns into grassland.' },
-    { id: 'frames', name: 'Cold frames', icon: 'sapling', cost: 80, logs: 10, col: 2, row: 3, needs: 'nursery', text: 'The nursery keeps raising saplings through winter.' },
-    { id: 'axes', name: 'Axes', icon: 'axe', cost: 40, col: 3, row: 0, text: 'Chopping takes half the time.' },
-    { id: 'selective', name: 'Selective felling', icon: 'forestry', cost: 60, col: 3, row: 1, needs: 'axes', text: 'Woodcutters can be told to leave a third of every stand, so it keeps growing while it is worked.' },
-    { id: 'stumps', name: 'Stump pulling', icon: 'axe', cost: 50, col: 3, row: 2, needs: 'axes', text: 'The land crew pulls stumps out for firewood, so stump fields can become fields.' },
-    { id: 'ditchblock', name: 'Ditch blocking', icon: 'drop', cost: 60, logs: 30, col: 4, row: 0, text: 'You can build a Fire watch camp. Block the settlers\' ditches on a drained marsh (10 logs). At the next spring flood the water stays and the marsh heals.' },
-    { id: 'reeds', name: 'Reed beds', icon: 'reeds', cost: 100, logs: 30, col: 4, row: 1, needs: 'ditchblock', text: 'Build a reed bed on a dirty river tile (15 logs) to clean it.' },
-    { id: 'quarry', name: 'Quarrying', icon: 'stone', col: 4, row: 2, needs: 'reeds', soon: true, text: 'Stone and lime from the hills. Coming in a later prototype.' },
-    { id: 'seal', name: 'Mine sealing', icon: 'seal', col: 4, row: 3, needs: 'quarry', soon: true, text: 'Seal the leaking mine and the rot stops for good. Coming in a later prototype.' },
-    { id: 'fishing', name: 'Fishing nets', icon: 'fishing', cost: 30, col: 5, row: 0, text: 'Fishers catch twice as many fish.' },
-    { id: 'smoke', name: 'Smokehouse', icon: 'food', cost: 60, logs: 10, col: 5, row: 1, needs: 'fishing', text: 'Smoked fish keeps: the crew no longer eats twice as much in winter.' },
-    { id: 'gloves', name: 'Work gloves', icon: 'hire', cost: 25, col: 5, row: 3, text: 'Your own taps on a hex count double.' },
-    { id: 'trade', name: 'Trade post', icon: 'boat', cost: 90, logs: 20, col: 5, row: 2, text: 'When the boat comes in, everything above your keep lines is sold, and anything below them is bought back, while the gold lasts.' },
+    { id: 'hoes', ch: 2, name: 'Hoes', icon: 'hoe', cost: 30, logs: 5, col: 0, row: 0, text: 'Loosening soil takes half the time. Until then the crew digs with sticks.' },
+    { id: 'compost', ch: 3, name: 'Compost heap', icon: 'compost', cost: 50, food: 20, col: 0, row: 1, needs: 'hoes', text: 'The crew can compost: 4 food in scraps makes a tile two steps richer at once.' },
+    { id: 'farms', ch: 4, name: 'Farms', icon: 'farms', cost: 80, col: 0, row: 2, needs: 'compost', text: 'The crew farms grassland on Field plans, except in winter. Every harvest tires the soil.' },
+    { id: 'yokes', ch: 3, name: 'Yokes', icon: 'drop', cost: 30, logs: 5, col: 1, row: 0, text: 'Watering takes two buckets a trip.' },
+    { id: 'swales', ch: 4, name: 'Swales', icon: 'hoe', cost: 60, col: 1, row: 1, needs: 'yokes', text: 'Shallow ditches catch spring rain: your land dries half as fast in summer.' },
+    { id: 'ditches', ch: 5, name: 'Ditches', icon: 'dam', cost: 100, logs: 20, col: 1, row: 2, needs: 'swales', text: 'Land next to a clean river or pond never dries below damp.' },
+    { id: 'dam', ch: 5, name: 'Dam breaking', icon: 'dam', col: 1, row: 3, needs: 'ditches', soon: true, text: 'Break the old dam so the dry riverbed fills. Coming in a later prototype.' },
+    { id: 'seeds', ch: 2, name: 'Seed gathering', icon: 'seed', cost: 20, col: 2, row: 0, text: 'In autumn the crew gathers seed from living forests. Seed is kept at the dock.' },
+    { id: 'nursery', ch: 4, name: 'Nursery', icon: 'sapling', cost: 40, col: 2, row: 1, needs: 'seeds', text: 'Seed beds raise saplings twice as fast.' },
+    { id: 'clover', ch: 2, name: 'Clover', icon: 'farms', cost: 40, col: 2, row: 2, needs: 'seeds', text: 'Field plans sow clover with seed instead of waiting for grass to creep in. Clover feeds the soil and turns into grassland.' },
+    { id: 'frames', ch: 4, name: 'Cold frames', icon: 'sapling', cost: 80, logs: 10, col: 2, row: 3, needs: 'nursery', text: 'The nursery keeps raising saplings through winter.' },
+    { id: 'axes', ch: 3, name: 'Axes', icon: 'axe', cost: 40, col: 3, row: 0, text: 'Chopping takes half the time.' },
+    { id: 'selective', ch: 4, name: 'Selective felling', icon: 'forestry', cost: 60, col: 3, row: 1, needs: 'axes', text: 'Felled stands grow back twice as fast.' },
+    { id: 'stumps', ch: 3, name: 'Stump pulling', icon: 'axe', cost: 50, col: 3, row: 2, needs: 'axes', text: 'The crew pulls stumps out for firewood, so stump fields can become fields.' },
+    { id: 'ditchblock', ch: 5, name: 'Ditch blocking', icon: 'drop', cost: 60, logs: 15, col: 4, row: 0, text: 'Block the settlers\' ditches on a drained marsh (10 logs). At the next spring flood the water stays and the marsh heals.' },
+    { id: 'reeds', ch: 5, name: 'Reed beds', icon: 'reeds', cost: 100, logs: 20, col: 4, row: 1, needs: 'ditchblock', text: 'Build a reed bed on a dirty river tile (15 logs) to clean it.' },
+    { id: 'quarry', ch: 5, name: 'Quarrying', icon: 'stone', col: 4, row: 2, needs: 'reeds', soon: true, text: 'Stone and lime from the hills. Coming in a later prototype.' },
+    { id: 'seal', ch: 5, name: 'Mine sealing', icon: 'seal', col: 4, row: 3, needs: 'quarry', soon: true, text: 'Seal the leaking mine and the rot stops for good. Coming in a later prototype.' },
+    { id: 'fishing', ch: 3, name: 'Fishing nets', icon: 'fishing', cost: 30, col: 5, row: 0, text: 'Fishing catches twice as many fish.' },
+    { id: 'smoke', ch: 3, name: 'Smokehouse', icon: 'food', cost: 60, logs: 10, col: 5, row: 1, needs: 'fishing', text: 'Smoked fish keeps: the crew no longer eats twice as much in winter.' },
+    { id: 'gloves', ch: 2, name: 'Work gloves', icon: 'hire', cost: 25, col: 5, row: 3, text: 'Your own taps on a hex count double.' },
+    { id: 'trade', ch: 3, name: 'Trade post', icon: 'boat', cost: 90, logs: 20, col: 5, row: 2, text: 'When the boat comes in, everything above your keep lines is sold, and anything below them is bought back, while the gold lasts.' },
   ];
   TECH.forEach((t) => { t.x = COLX[t.col]; t.y = ROWY[t.row]; });
 
@@ -238,10 +237,10 @@
     START_OWN.forEach(([c, r]) => { get(c, r).own = true; });
     S = { time: 0, gold: 30, food: 12, logs: 0, seed: 0, saplings: 0, workers: [], fx: [], tech: {}, seasonCount: 0, log: [], nextId: 1, bought: 0,
       mealT: 0, warmT: 0, nurseT: 0, flood: 0, boat: BOAT_STAY, graves: [], dead: 0, over: null, keep: { logs: 30, food: 10 }, started: false,
-      camps: [], goldAcc: 0, marketT: 0, popI: 0, done: {}, mile: 0 };
+      camps: [], goldAcc: 0, marketT: 0, popI: 0, done: {}, mile: 0, chapter: 1, target: -1, found: [] };
     toasts.length = 0;
     const home = addCamp('dock', DOCK);
-    addWorker(home);
+    addWorker(home); addWorker(home);
     redraw();
   }
   const seasonOf = (n) => n % 4;
@@ -275,7 +274,7 @@
   function loadSave() { try { const v = localStorage.getItem(SAVE); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function load(d) {
     cells.forEach((t, i) => CELL_KEYS.forEach((k, j) => { t[k] = d.cells[i][j]; }));
-    S = { goldAcc: 0, marketT: 0, popI: 0, done: {}, mile: 0, found: [], keep: { logs: 30, food: 10 }, graves: [], log: [], ...d, fx: [], workers: [] };
+    S = { goldAcc: 0, marketT: 0, popI: 0, done: {}, mile: 0, found: [], chapter: 1, target: -1, keep: { logs: 30, food: 10 }, graves: [], log: [], ...d, fx: [], workers: [] };
     delete S.cells;
     if (!Number.isFinite(S.goldAcc)) S.goldAcc = 0; // a bad number here would stop the gold for good
     reindexCamps();
@@ -322,19 +321,19 @@
     if (t.stumps) return 'pull';
     if (t.soil < 2) return 'loosen';
     if (t.food < 2) return has('compost') && S.food >= 4 + S.keep.food ? 'compost' : 'mulch';
-    if (t.cover === 'bare') return 'sow';
+    if (t.cover === 'bare' && has('clover') && S.seed >= 2) return 'sow'; // otherwise grass creeps in from living land next to it
     return null;
   }
   // The steps of a plan as chips: [name, done, step id]
   function chips(t) {
     if (t.kind === 'marsh') return [['Block ditches', t.marsh !== 'drained', 'block'], ['Spring flood', t.marsh === 'healed', null]];
     if (t.kind === 'river') return [['Reed bed', t.river === 'clean', 'reedbed']];
-    const planted = !['bare', 'grass', 'clover'].includes(t.cover) || false;
+    const planted = !['bare', 'grass', 'clover'].includes(t.cover);
     if (t.plan === 'forest') return [['Clear', !t.dead, null], ['Loosen', t.soil >= 1, 'loosen'], ['Feed', t.food >= 2, 'mulch'], ['Plant', planted, 'plant'], ['Grow', TREES.has(t.cover), null]];
-    if (t.plan === 'field') return [['Clear', !t.dead, null], ['Pull stumps', !t.stumps, 'pull'], ['Loosen', t.soil >= 2, 'loosen'], ['Feed', t.food >= 2, 'mulch'], ['Sow clover', t.cover !== 'bare', 'sow'], ['Grow', ['grass', 'meadow'].includes(t.cover), null]];
+    if (t.plan === 'field') return [['Clear', !t.dead, null], ['Pull stumps', !t.stumps, 'pull'], ['Loosen', t.soil >= 2, 'loosen'], ['Feed', t.food >= 2, 'mulch'], ['Grass', ['grass', 'meadow'].includes(t.cover), null]];
     return [];
   }
-  // Why a planned tile is stuck, if it is: 'season', 'tech', 'stock', 'hands', or null
+  // Why a planned tile is stuck, if it is: 'season', 'tech', 'stock', or null
   function stall(t) {
     if (!t.own || !t.plan || t.plan === 'rest') return null;
     const j = landStep(t);
@@ -342,7 +341,6 @@
     if (JOB[j].tech && !has(JOB[j].tech)) return 'tech';
     if (!inSeason(j)) return 'season';
     if (!stocked(j)) return 'stock';
-    if (!reachedBy(t, 'land')) return S.workers.some((w) => rolesOf(w).includes('land')) ? 'hands' : 'nohands';
     return null;
   }
 
@@ -357,9 +355,10 @@
   const beds = (c) => CAMPS[c.type].beds[c.level - 1];
   const people = (c) => S.workers.filter((w) => w.camp === c.id);
   const inRange = (c, t) => dist(campTile(c), t) <= rangeOf(c);
-  const reachedBy = (t, role) => S.camps.some((c) => people(c).length && inRange(c, t) && (CAMPS[c.type].roles.includes(role) || (role === 'land' && c.type === 'well' && season() !== SUMMER)));
+  // work on a hex goes twice as fast when a camp that suits it stands within range
+  const boostAt = (t, j) => (S.camps.some((c) => (CAMPS[c.type].boost.includes(CAT[j]) || CAMPS[c.type].boost.includes(j)) && inRange(c, t)) ? 2 : 1);
   function addCamp(type, t) {
-    const c = { id: S.nextId++, type, at: idx(t), level: 1, cut: 'last' };
+    const c = { id: S.nextId++, type, at: idx(t), level: 1 };
     S.camps.push(c); reindexCamps(); changed();
     return c;
   }
@@ -367,7 +366,7 @@
   const FISHY = (t) => t.kind === 'beach' || t.kind === 'pond' || (t.kind === 'river' && t.river === 'clean');
   function campFits(type, t) {
     const k = CAMPS[type];
-    if (!t || !t.own || t.rot || campAt(t) || (k.tech && !has(k.tech))) return false;
+    if (!t || !t.own || t.rot || campAt(t) || k.ch > S.chapter) return false;
     if (k.on === 'water') return FISHY(t) && t !== DOCK;
     return isLand(t) && !t.dead && !TREES.has(t.cover);
   }
@@ -407,62 +406,38 @@
   }
   function hire(c) {
     c = c || dockCamp();
-    const cost = hireCost(); if (S.gold < cost || S.over || people(c).length >= beds(c)) return;
+    const cost = hireCost(); if (S.gold < cost || S.over || people(c).length >= beds(c) || S.chapter < 3) return;
     S.gold -= cost; addWorker(c);
     say(`${S.workers[S.workers.length - 1].name} moves into the ${lower(campName(c))} for ${cost} gold.`);
     lastKey = '';
   }
   const homeOf = (w) => campById(w.camp) || dockCamp();
-  // who would move into this camp: someone from the fullest other camp, the dock first
-  const movable = (c) => S.workers.filter((w) => w.camp !== c.id && people(homeOf(w)).length > (homeOf(w).type === 'dock' ? 0 : 1))
-    .sort((a, b) => (homeOf(b).type === 'dock') - (homeOf(a).type === 'dock') || dist(a.at, campTile(c)) - dist(b.at, campTile(c)))[0] || null;
-  // What a worker does in this season: carriers dig outside summer, the land crews fell firewood in winter.
-  function rolesOf(w) {
-    const c = homeOf(w), r = CAMPS[c.type].roles;
-    if (c.type === 'well' && season() !== SUMMER) return ['land'];
-    if (r[0] === 'land' && winter()) return c.type === 'dock' ? ['wood', 'food'] : ['wood'];
-    return r;
-  }
-  const effRole = (w) => (w.taskRole || rolesOf(w)[0]);
-  const skill = (w, role) => Math.min(3, Math.floor((w.xp[role] || 0) / 150));
-  const speedOf = (w) => (w.hungry || w.cold ? 0.5 : w.sick > SICKEN / 4 ? 0.7 : 1) * (1 + 0.15 * skill(w, effRole(w) || 'land'));
+  const catOf = (w) => CAT[w.taskJob] || 'land';
+  const bestAt = (w) => Object.keys(w.xp).sort((a, b) => w.xp[b] - w.xp[a])[0] || 'land';
+  const skill = (w, cat) => Math.min(3, Math.floor((w.xp[cat] || 0) / 150));
+  const speedOf = (w) => (w.hungry || w.cold ? 0.5 : w.sick > SICKEN / 4 ? 0.7 : 1) * (1 + 0.15 * skill(w, catOf(w)));
   const busy = (t, w) => S.workers.filter((o) => o !== w && o.task === t).length;
-  const cutOf = (t) => { const c = S.camps.find((k) => k.type === 'wood' && inRange(k, t)); return c ? c.cut : 'last'; };
-  const cutLimit = (t) => { const k = cutOf(t); return k === 'third' ? Math.ceil(WOOD[t.cover] / 3) : k === 'dead' ? Infinity : 0; };
-  // What this worker should do next: the highest-priority task their crew can do now, nearest first.
-  // Work in the home camp's range comes first, but they walk out for anything more needed elsewhere on your land.
-  // Fishing and farming give way once the store holds plenty of food.
+  const cutLimit = (t) => Math.ceil(WOOD[t.cover] / 3); // felling always leaves a third, so a stand keeps growing
+  // One crew: each worker takes the most needed job on your land, nearest first, a little further for a camp that
+  // speeds it up. Food and logs are wanted harder when the store runs below what the crew needs.
+  // logs that planned hexes are waiting on, so the crew cuts for them too
+  const logsWanted = () => cells.reduce((a, t) => { const j = t.own && t.plan ? landStep(t) : null; return a + (j && JOB[j].uses && JOB[j].uses.logs ? JOB[j].uses.logs : 0); }, 0);
   function pickTask(w, D) {
-    const home = homeOf(w), seen = cells.filter((t) => t.own && t.seen && D.cost.has(t));
-    const far = (t) => (inRange(home, t) ? 0 : 600), plenty = S.food > S.workers.length * 15 + S.keep.food;
-    const d = (t) => D.cost.get(t) + far(t), out = [], roles = rolesOf(w);
-    // with nothing of their own trade to do, anyone lends the land crew a hand
-    for (let role of roles.includes('land') ? roles : [...roles, 'spare']) {
-      if (role === 'spare') { if (out.length) break; role = 'land'; }
-      if (role === 'land') {
-        for (const t of seen) {
-          const j = landStep(t);
-          if (!j || (JOB[j].tech && !has(JOB[j].tech)) || !inSeason(j) || !stocked(j) || busy(t, w) >= 3) continue;
-          if (j === 'burn' && w.sick > SICKEN * 0.3) continue; // rest away from the rot before the next burn
-          out.push({ t, role, job: j, score: (j === 'burn' ? 5 : t.prio) * 1000 - d(t) });
-        }
-        if (season() === AUTUMN && has('seeds') && S.seed < 12) for (const t of seen) if (isForest(t) && busy(t, w) < 2) out.push({ t, role, job: 'seed', score: 500 - d(t) });
-      } else if (role === 'wood') {
-        for (const t of seen) {
-          if (busy(t, w) >= 3 || t.rot) continue;
-          if (t.dead) out.push({ t, role, job: 'clear', score: 2000 - d(t) });
-          else if (isForest(t) && t.plan !== 'rest' && t.wood > cutLimit(t)) out.push({ t, role, job: 'fell', score: 900 - d(t) });
-        }
-      } else if (role === 'water') {
-        for (const t of seen) if (isLand(t) && !t.rot && t.water < 2 && (PLANTS.has(t.cover) || (t.plan && t.plan !== 'rest')) && busy(t, w) < 2) out.push({ t, role, job: 'water', score: (2 - t.water) * 1000 + (PLANTS.has(t.cover) ? 500 : 0) - d(t) });
-      } else if (role === 'food') {
-        for (const t of seen) {
-          if (busy(t, w) >= 2 || t.rot) continue;
-          const fish = (t.kind === 'beach' && t !== DOCK) || (t.kind === 'pond' && !winter()) || (t.kind === 'river' && t.river === 'clean');
-          if (fish) out.push({ t, role, job: 'fish', score: (plenty ? 100 : 800) - d(t) });
-          else if (has('farms') && !winter() && isLand(t) && t.plan === 'field' && ['grass', 'meadow'].includes(t.cover) && t.food >= 2) out.push({ t, role, job: 'farm', score: (plenty ? 150 : 1000) - d(t) });
-        }
-      }
+    const seen = cells.filter((t) => t.own && t.seen && D.cost.has(t)), out = [];
+    const d = (t, j) => D.cost.get(t) - (boostAt(t, j) > 1 ? 4 : 0);
+    const hungry = S.food < S.workers.length * 4 + 4, plenty = S.food > S.workers.length * 15 + S.keep.food;
+    const cold = S.logs < S.keep.logs + logsWanted(), add = (t, job, score) => out.push({ t, job, score: score - d(t, job) });
+    for (const t of seen) {
+      const j = landStep(t);
+      if (j && (!JOB[j].tech || has(JOB[j].tech)) && inSeason(j) && stocked(j) && busy(t, w) < 3 && !(j === 'burn' && w.sick > SICKEN * 0.3)) add(t, j, (j === 'burn' ? 5 : t.prio) * 1000);
+      if (t.rot) continue;
+      if (t.dead && busy(t, w) < 3) add(t, 'clear', t.plan ? 2000 : cold ? 1600 : 1200);
+      else if (isForest(t) && t.plan !== 'rest' && t.wood > cutLimit(t) && busy(t, w) < 2) add(t, 'fell', cold ? 1500 : 300);
+      if (season() === AUTUMN && has('seeds') && S.seed < 12 && isForest(t) && busy(t, w) < 2) add(t, 'seed', 700);
+      if (season() === SUMMER && isLand(t) && t.water < 2 && (PLANTS.has(t.cover) || (t.plan && t.plan !== 'rest')) && busy(t, w) < 2) add(t, 'water', (2 - t.water) * 600 + (PLANTS.has(t.cover) ? 500 : 0));
+      const fish = (t.kind === 'beach' && t !== DOCK) || (t.kind === 'pond' && !winter()) || (t.kind === 'river' && t.river === 'clean');
+      if (fish && busy(t, w) < 2 && S.food < S.workers.length * 30 + S.keep.food) add(t, 'fish', hungry ? 2500 : plenty ? 50 : 800);
+      else if (has('farms') && !winter() && isLand(t) && t.plan === 'field' && ['grass', 'meadow'].includes(t.cover) && t.food >= 2 && busy(t, w) < 2) add(t, 'farm', hungry ? 2600 : plenty ? 60 : 900);
     }
     return out.sort((a, b) => b.score - a.score)[0] || null;
   }
@@ -475,11 +450,12 @@
   const SOURCES = (t) => t.kind === 'pond' || t.kind === 'beach' || (t.kind === 'river' && t.river === 'clean') || (campAt(t) && campAt(t).type === 'well');
   function plan(w) {
     const D = dijkstra(w.at), home = campTile(homeOf(w));
-    if (w.carry && w.carry.kind !== 'water') return go(w, D, home, 'deliver'); // every camp's store is the valley's store
+    const store = S.camps.map(campTile).filter((t) => D.cost.has(t)).sort((a, b) => D.cost.get(a) - D.cost.get(b))[0] || home;
+    if (w.carry && w.carry.kind !== 'water') return go(w, D, store, 'deliver'); // every camp's store is the valley's store
     if (w.carry && w.carry.kind === 'water' && w.task) return go(w, D, w.task, 'pour');
     const pick = pickTask(w, D);
     if (pick) {
-      w.task = pick.t; w.taskJob = pick.job; w.taskRole = pick.role;
+      w.task = pick.t; w.taskJob = pick.job; w.idle = 0;
       if (pick.job === 'water') { // fetch water from the nearest clean source first
         let src = null; for (const t of cells) if (SOURCES(t) && D.cost.has(t) && (!src || D.cost.get(t) < D.cost.get(src))) src = t;
         if (!src) { w.task = null; w.job = 'wait'; w.timer = 2; return; }
@@ -487,7 +463,7 @@
       }
       return go(w, D, pick.t, 'work');
     }
-    w.task = null; w.taskRole = null;
+    w.task = null; w.taskJob = null;
     if (w.at !== home) return go(w, D, home, 'home');
     w.job = 'wait'; w.timer = 1.5;
   }
@@ -513,10 +489,11 @@
     }
     if (w.job === 'filling') { w.timer -= dt; if (w.timer <= 0) { w.carry = { kind: 'water', n: has('yokes') ? 2 : 1 }; w.job = null; } return; }
     if (w.job === 'working') {
-      const t = w.target, j = w.taskJob, role = effRole(w);
-      w.xp[role] = (w.xp[role] || 0) + dt;
+      const t = w.target, j = w.taskJob;
+      w.xp[CAT[j]] = (w.xp[CAT[j]] || 0) + dt;
+      dt *= boostAt(t, j);
       if (j === 'clear' || j === 'fell') {
-        if (role !== 'wood' || (j === 'clear' ? !t.dead : t.wood <= cutLimit(t) || !isForest(t))) { w.job = null; w.task = null; return; }
+        if (j === 'clear' ? !t.dead : t.wood <= cutLimit(t) || !isForest(t)) { w.job = null; w.task = null; return; }
         w.timer -= dt;
         if (w.timer <= 0) { w.carry = { kind: 'logs', n: 1 }; fx(t, '+1 log', '#e2bd78'); w.job = null; w.task = null; cut(t, j); }
       } else if (j === 'seed') {
@@ -524,20 +501,21 @@
         w.timer -= dt;
         if (w.timer <= 0) { w.carry = { kind: 'seed', n: 2 }; fx(t, '+2 seed', '#9bcb3e'); count('seed', 2); w.job = null; w.task = null; }
       } else if (j === 'fish' || j === 'farm') {
-        if (role !== 'food' || (j === 'farm' && (winter() || t.food < 2)) || (j === 'fish' && t.kind === 'pond' && winter())) { w.job = null; w.task = null; return; }
+        if ((j === 'farm' && (winter() || t.food < 2)) || (j === 'fish' && t.kind === 'pond' && winter())) { w.job = null; w.task = null; return; }
         w.timer -= dt;
         if (w.timer <= 0) {
           w.timer = j === 'fish' ? FISH_TIME / (has('fishing') ? 2 : 1) : FARM_TIME; S.food++; fx(t, '+1 food', '#a9d5f0'); if (j === 'fish') count('fish');
           if (j === 'farm' && ++t.tire >= 12) { t.tire = 0; t.food--; } // every harvest tires the soil a little
+          w.job = null; w.task = null; // one catch at a time, then see what is needed most
         }
       } else if (JOB[j]) {
-        if (role !== 'land' || landStep(t) !== j || !inSeason(j)) { w.job = null; w.task = null; return; }
+        if (landStep(t) !== j || !inSeason(j)) { w.job = null; w.task = null; return; }
         t.work += dt * (j === 'loosen' && !has('hoes') ? 0.5 : 1) * (j === 'loosen' && season() === SUMMER ? 0.5 : 1);
         if (t.work >= JOB[j].work) { if (stocked(j)) finish(t, j); else t.work = JOB[j].work; }
       }
       return;
     }
-    if (w.job === 'wait') { w.timer -= dt; if (w.timer <= 0) w.job = null; return; }
+    if (w.job === 'wait') { w.idle = (w.idle || 0) + dt; w.timer -= dt; if (w.timer <= 0) w.job = null; return; }
     if (!w.job) plan(w);
   }
   function die(w, cause) {
@@ -604,7 +582,7 @@
     else if (j === 'pull') { t.stumps = false; S.logs += 6; fx(DOCK, '+6 logs', '#e2bd78'); }
     else if (j === 'burn') { t.rot = false; t.held = false; t.food = 0; t.cover = isLand(t) ? 'bare' : t.cover; t.wood = 0; if (t.kind === 'river' && t.river === 'clean') t.river = 'dirty'; }
     else if (j === 'block') t.marsh = 'blocked';
-    else if (j === 'reedbed') { t.river = 'clean'; t.plan = null; }
+    else if (j === 'reedbed') { t.river = 'clean'; t.plan = null; count('healed'); }
     fx(t, JOB[j].name.toLowerCase(), '#9bcb3e');
     if (j === 'block' || j === 'reedbed' || (isLand(t) && !landStep(t) && j !== 'burn')) { /* plan reached its waiting stage */ }
     changed();
@@ -636,10 +614,10 @@
       if (!g) continue; // nothing grows in winter
       const wet = t.water >= 1 || s !== SUMMER, gd = dt * g;
       if (t.cover === 'seedlings' && wet && t.food >= 1) { t.grow += gd; if (t.grow >= SEEDLING_GROW) { t.cover = 'young'; t.grow = 0; changed(); } }
-      else if (t.cover === 'young' && wet) { t.grow += gd; if (t.grow >= YOUNG_GROW) { t.cover = 'pines'; t.wood = NEW_STAND; t.grow = 0; t.age = 0; t.stumps = false; t.soil = 2; changed(); if (t.seen) fx(t, 'a pine stand', '#9bcb3e'); } }
+      else if (t.cover === 'young' && wet) { t.grow += gd; if (t.grow >= YOUNG_GROW) { t.cover = 'pines'; t.wood = NEW_STAND; t.grow = 0; t.age = 0; t.stumps = false; t.soil = 2; changed(); if (t.own) count('grown'); if (t.seen) fx(t, 'a pine stand', '#9bcb3e'); } }
       else if (t.cover === 'clover' && wet) { t.grow += gd; if (t.grow >= CLOVER_GROW) { t.cover = 'grass'; t.food = Math.min(3, t.food + 1); t.grow = 0; changed(); } }
       else if (TREES.has(t.cover) && !S.workers.some((w) => w.task === t && w.taskJob === 'fell')) {
-        if (t.wood < WOOD[t.cover]) { t.regrow += gd; if (t.regrow >= REGROW) { t.regrow = 0; t.wood++; } }
+        if (t.wood < WOOD[t.cover]) { t.regrow += gd * (has('selective') ? 2 : 1); if (t.regrow >= REGROW) { t.regrow = 0; t.wood++; } }
         if (t.cover === 'pines' && t.wood >= 45) { t.age += gd; if (t.age >= OLD_GROW) { t.cover = 'forest'; t.age = 0; changed(); } }
       } else if (t.cover === 'bare' && !t.dead && t.own && t.soil >= 1 && t.food >= 1 && t.plan !== 'forest' && nbs(t).some((n) => living(n) && !campAt(n) && n.kind !== 'scenery')) {
         t.grow += gd; if (t.grow >= GRASS_CREEP) { t.cover = 'grass'; t.grow = 0; changed(); }
@@ -648,9 +626,9 @@
       else if (t.stumps) { t.stumpAge += gd; if (t.stumpAge >= STUMP_ROT) { t.stumps = false; changed(); } }
     }
     // the nursery raises seed into saplings
-    const beds2 = S.camps.filter((c) => c.type === 'nursery' && people(c).length);
+    const beds2 = S.camps.filter((c) => c.type === 'nursery');
     if (beds2.length && S.seed > 0 && (g || has('frames'))) {
-      S.nurseT += dt * (g || 0.5) * beds2.reduce((a, c) => a + c.level, 0);
+      S.nurseT += dt * (g || 0.5) * (has('nursery') ? 2 : 1) * beds2.reduce((a, c) => a + c.level, 0);
       if (S.nurseT >= NURSERY) { S.nurseT = 0; S.seed--; S.saplings++; fx(campTile(beds2[0]), '+1 sapling', '#9bcb3e'); }
     }
   }
@@ -676,7 +654,7 @@
   function spreadRot() {
     const n = rotNext();
     if (!n) return;
-    const watched = S.camps.some((c) => c.type === 'watch' && people(c).length && inRange(c, n));
+    const watched = S.camps.some((c) => c.type === 'watch' && inRange(c, n));
     if (watched) { n.held = true; if (n.seen) fx(n, 'the watch holds', '#e6c35a'); return; }
     const holds = isForest(n) || (n.kind === 'river' && n.river === 'clean') || (n.kind === 'marsh' && n.marsh === 'healed');
     if (holds && !n.held) { n.held = true; if (n.seen) fx(n, 'holding', '#9bcb3e'); return; }
@@ -699,7 +677,7 @@
     changed();
   }
   function startFlood() {
-    cells.forEach((t) => { if (t.kind === 'marsh' && t.marsh === 'blocked') { t.marsh = 'healed'; t.plan = null; if (t.own) notice('The spring water stayed in the marsh. It is coming back to life.'); } });
+    cells.forEach((t) => { if (t.kind === 'marsh' && t.marsh === 'blocked') { t.marsh = 'healed'; t.plan = null; count('healed'); if (t.own) notice('The spring water stayed in the marsh. It is coming back to life.'); } });
     const set = cells.filter((t) => (t.kind === 'marsh' && t.marsh === 'drained') || (t.kind !== 'lake' && nbs(t).some((n) => n.kind === 'marsh' && n.marsh === 'drained')));
     S.floodSet = set.map(idx);
     S.flood = set.length ? FLOOD : 0;
@@ -1008,21 +986,22 @@
     px(x, y + 6, 1, 1, '#141d26'); px(x + 2, y + 6, 1, 1, '#141d26');
     px(x, y + 3, 3, 3, body); px(x, y + 5, 3, 1, '#1a3445');
     px(x, y, 3, 3, sick ? '#c3d3e0' : '#f0c08a'); px(x, y, 3, 1, '#3f2b31');
-    const r = effRole(w);
+    const r = w.task ? CAT[w.taskJob] : null;
     if (r) { const [h, head] = TOOL[r]; px(x + 3, y + 2, 1, 3, h); px(x + 3, y + 1, 2, 2, head); }
     if (w.carry) { if (w.carry.kind === 'logs') drawLog(x - 1, y - 3); else if (w.carry.kind === 'water') { px(x - 2, y + 2, 2, 3, '#5f9edd'); px(x - 2, y + 2, 2, 1, '#a9d5f0'); } else px(x - 1, y - 2, 3, 2, '#9bcb3e'); }
     if (w.job === 'working' && Math.floor(now * 4) % 2) px(x + 4, y + 1, 2, 1, '#f4f6ea');
     if (w.cold) px(x + 3 + (Math.floor(now * 3) % 2), y + 1, 1, 1, '#dce7ee');
+    if (!w.hungry && w.job === 'wait' && (w.idle || 0) > 4) { const f = Math.floor(now * 1.5 + w.id) % 3, bx2 = x + 2 + f, by = y - 4 - f * 2; px(bx2, by, 3, 1, '#f4f6ea'); px(bx2 + 1, by + 1, 1, 1, '#f4f6ea'); px(bx2, by + 2, 3, 1, '#f4f6ea'); } // z z z: nothing to do
     if (w.hungry) { const bx2 = x - 1, by = y - 9; px(bx2, by, 6, 5, '#f4f6ea'); px(bx2 + 1, by + 2, 4, 2, '#b57f52'); px(bx2 + 2, by + 3, 2, 1, '#77513c'); px(bx2 + 1, by + 5, 1, 1, '#f4f6ea'); }
   }
   function drawGrave(g) { px(g.x - 1, g.y - 4, 3, 4, '#a3b5c4'); px(g.x - 1, g.y - 4, 1, 4, '#dce7ee'); px(g.x, g.y - 3, 1, 2, '#5f6e8a'); px(g.x - 2, g.y, 5, 1, '#3f2b31'); }
   // stall markers: tiny icons over a planned tile that can't move on
-  const MARK = {
-    season: (x, y) => { px(x + 2, y, 1, 5, '#f4f6ea'); px(x, y + 2, 5, 1, '#f4f6ea'); px(x + 1, y + 1, 1, 1, '#f4f6ea'); px(x + 3, y + 3, 1, 1, '#f4f6ea'); px(x + 3, y + 1, 1, 1, '#f4f6ea'); px(x + 1, y + 3, 1, 1, '#f4f6ea'); },
-    tech: (x, y) => { px(x + 1, y, 3, 1, '#e6c35a'); px(x + 1, y, 1, 2, '#e6c35a'); px(x + 3, y, 1, 2, '#e6c35a'); px(x, y + 2, 5, 3, '#e6c35a'); px(x + 2, y + 3, 1, 1, '#141d26'); },
-    stock: (x, y) => { px(x + 2, y + 2, 1, 3, '#77513c'); px(x + 1, y, 3, 2, '#9bcb3e'); px(x + 2, y - 1, 1, 1, '#9bcb3e'); },
-    hands: (x, y) => { px(x, y + 1, 1, 3, '#f0c08a'); px(x + 1, y, 3, 4, '#f0c08a'); px(x + 4, y + 2, 1, 1, '#f0c08a'); px(x + 1, y + 4, 3, 1, '#c0473f'); },
+  const MARK = { // drawn with q(x, y, w, h, colour) on a 5 by 5 grid
+    season: (q) => { q(2, 0, 1, 5, '#f4f6ea'); q(0, 2, 5, 1, '#f4f6ea'); q(1, 1, 1, 1, '#f4f6ea'); q(3, 3, 1, 1, '#f4f6ea'); q(3, 1, 1, 1, '#f4f6ea'); q(1, 3, 1, 1, '#f4f6ea'); },
+    tech: (q) => { q(1, 0, 3, 1, '#e6c35a'); q(1, 0, 1, 2, '#e6c35a'); q(3, 0, 1, 2, '#e6c35a'); q(0, 2, 5, 3, '#e6c35a'); q(2, 3, 1, 1, '#141d26'); },
+    stock: (q) => { q(2, 2, 1, 3, '#77513c'); q(1, 0, 3, 2, '#9bcb3e'); q(0, 4, 5, 1, '#e2bd78'); },
   };
+  function drawMark(why, x, y) { px(x - 2, y - 2, 14, 14, '#141d26'); px(x - 1, y - 1, 12, 12, '#3a4656'); MARK[why]((a, b, w, h, c) => px(x + a * 2, y + b * 2, w * 2, h * 2, c)); }
   const LENS = {
     soil: (t) => ['#c0473f', '#e6c35a', '#3fae5a'][t.soil],
     food: (t) => ['#6b5a7a', '#b57f52', '#77513c', '#2f7d46'][t.food],
@@ -1044,7 +1023,7 @@
       if (!t.own || !t.plan) return;
       const p = X.at(t.c, t.r), fx0 = p.x + 7, fy = p.y + X.FY + 3;
       px(fx0, fy, 1, 7, '#3f2b31'); px(fx0 + 1, fy, 4, 3, PLANS[t.plan].color);
-      const why = stall(t); if (why) { const bx2 = p.x + 19, by = p.y + X.FY + 3; px(bx2 - 1, by - 2, 7, 8, 'rgba(20,29,38,0.75)'); MARK[{ nohands: 'hands', marsh: 'stock' }[why] || why](bx2, by); }
+      const why = stall(t); if (why && MARK[why]) drawMark(why, p.x + 18, p.y + X.FY + 4);
     });
     const sc = sel && campAt(sel);
     if (sc) cells.forEach((t) => { if (inRange(sc, t) && t.seen) { const p = X.at(t.c, t.r); sx.drawImage(rangeHex, p.x, p.y + X.FY); } });
@@ -1069,6 +1048,22 @@
       const p = X.at(t.c, t.r);
       for (let i = 0; i < 4; i++) if (Math.sin(now * 3 + i * 1.7 + t.c) > 0.2) px(p.x + 7 + ((i * 7 + t.r * 3) % 18), p.y + X.FY + 6 + ((i * 5 + t.c) % 15), 2, 1, '#5f9edd');
     });
+    const gh = goalHex(); // the chapter's goal hex glows and an arrow bobs over it
+    if (gh && gh.seen) {
+      const p = X.at(gh.c, gh.r), a = 0.5 + 0.5 * Math.sin(now * 3);
+      sx.globalAlpha = 0.25 + 0.3 * a; sx.drawImage(goldHex, p.x, p.y + X.FY); sx.globalAlpha = 0.6 + 0.4 * a; sx.drawImage(ringSel, p.x, p.y + X.FY); sx.globalAlpha = 1;
+      const ax = p.x + 15, ay = p.y + X.FY - 9 + Math.round(Math.sin(now * 4) * 2);
+      px(ax - 2, ay - 1, 5, 2, '#141d26'); px(ax - 1, ay + 1, 3, 1, '#141d26'); px(ax, ay + 2, 1, 1, '#141d26');
+      px(ax - 1, ay - 1, 3, 1, '#e6c35a'); px(ax, ay, 1, 1, '#e6c35a');
+    }
+    cells.forEach((t) => { // progress under a hex: work on its step, or growth
+      if (!t.own || !t.seen || !isLand(t) || campAt(t)) return;
+      const j = landStep(t);
+      const k = j && t.work > 0 ? t.work / JOB[j].work : t.dead && t.dead < DEADWOOD ? 1 - t.dead / DEADWOOD : t.cover === 'seedlings' ? t.grow / SEEDLING_GROW : t.cover === 'young' ? t.grow / YOUNG_GROW : t.cover === 'clover' ? t.grow / CLOVER_GROW : t.cover === 'bare' && t.grow > 0 && !t.dead ? t.grow / GRASS_CREEP : -1;
+      if (k < 0) return;
+      const p = X.at(t.c, t.r), bx2 = p.x + 9, by = p.y + X.FY + 21;
+      px(bx2 - 1, by - 1, 16, 4, '#141d26'); px(bx2, by, 14, 2, '#3a4656'); px(bx2, by, Math.max(1, Math.round(14 * Math.min(1, k))), 2, j && t.work > 0 ? '#e6c35a' : t.dead ? '#e2bd78' : '#9bcb3e');
+    });
     if (hover && hover !== sel) { const p = X.at(hover.c, hover.r); sx.drawImage(ring, p.x, p.y + X.FY); }
     if (sel) { const p = X.at(sel.c, sel.r); sx.drawImage(ringSel, p.x, p.y + X.FY); }
     const k = scale * dpr, ox = offX * dpr, oy = offY * dpr;
@@ -1084,7 +1079,7 @@
     for (let y = 0; y < 28; y++) for (let x = 0; x < 32; x++) if (X.inFace(x, y) && (!edgeOnly || !X.inFace(x - 1, y) || !X.inFace(x + 1, y) || !X.inFace(x, y - 1) || !X.inFace(x, y + 1))) rc.fillRect(x, y, 1, 1);
     return c;
   }
-  const ring = hexShape('#f4f6ea', true), ringSel = hexShape('#e6c35a', true), waterHex = hexShape('rgba(95,158,221,0.6)', false);
+  const ring = hexShape('#f4f6ea', true), ringSel = hexShape('#e6c35a', true), goldHex = hexShape('#e6c35a', false), waterHex = hexShape('rgba(95,158,221,0.6)', false);
   const lensCache = {};
   const lensHex = (c) => lensCache[c] || (lensCache[c] = hexShape(c, false));
 
@@ -1134,11 +1129,13 @@
     return `${nameOf(t)}${own}`;
   }
   const planFits = (t, p) => !campAt(t) && (isLand(t) ? ['forest', 'field', 'rest'].includes(p) : t.kind === 'marsh' ? p === 'marsh' && t.marsh === 'drained' : t.kind === 'river' ? p === 'river' && t.river === 'dirty' : false);
+  const PLAN_CH = { field: 2, forest: 4, rest: 4, marsh: 5, river: 5 }; // the chapter each plan first appears in
   function plansFor(t) {
     if (!t.own || campAt(t)) return [];
-    if (isLand(t)) return ['forest', 'field', 'rest'];
-    if (t.kind === 'marsh' && t.marsh === 'drained') return ['marsh'];
-    if (t.kind === 'river' && t.river === 'dirty') return ['river'];
+    const ok = (p) => PLAN_CH[p] <= S.chapter;
+    if (isLand(t)) return ['forest', 'field', 'rest'].filter(ok);
+    if (t.kind === 'marsh' && t.marsh === 'drained') return ['marsh'].filter(ok);
+    if (t.kind === 'river' && t.river === 'dirty') return ['river'].filter(ok);
     return [];
   }
   function setPlan(t, p) { t.plan = t.plan === p ? null : p; t.work = 0; lastKey = ''; }
@@ -1168,10 +1165,7 @@
     'Beach': 'Fishers catch fish here, all year round. Water carriers fill buckets here.',
     'Pond': 'Fishers catch fish here, except in winter. Water carriers fill buckets here.',
   };
-  const STOCK_HINT = { plant: ' Saplings are raised at a Seed bed: build one from the action bar on any of your land.', sow: ' Seed is gathered from forests in autumn, or bought from the trader\'s boat.', block: ' Woodcutters bring in logs.', reedbed: ' Woodcutters bring in logs.', compost: ' Fishers bring in food.' };
-  const STALL_TEXT = { marsh: 'A reed bed is planted with reeds from a healed marsh of yours, and you have none yet. Buy a marsh hex at the edge of your land, give it the Heal marsh plan so the crew blocks its ditches (10 logs), and the next spring flood brings it back to life.', season: 'Waiting for the right season.', tech: 'Locked: needs an upgrade from the tech tree.', stock: 'Waiting for stock at the dock.', nohands: 'Nobody in your crew works the land. Move someone back into the dock, or build a Gardener\'s tent next to this hex and hire into it.', hands: 'No camp is close to this hex. Idle hands walk out to it, but a Gardener\'s tent nearby works it much faster.' };
   const PLAN_ICON = { forest: 'forestry', field: 'farms', rest: 'snow', marsh: 'drop', river: 'reeds' };
-  const CUT_TEXT = { last: 'Cut to the last log', third: 'Leave a third', dead: 'Deadwood only' };
   let ringOpen = true, ringMenu = 'main', placing = null; // the action bar for the selected hex
   function select(t) { sel = t && t.seen ? t : null; needWhy = ''; ringOpen = true; ringMenu = 'main'; placing = null; tip.style.display = 'none'; lastKey = ''; }
   // The actions that fit a hex right now: buying, plans, camps; on a camp, its people and its growth.
@@ -1184,12 +1178,9 @@
     const cp = campAt(t);
     if (cp) {
       const full = people(cp).length >= beds(cp);
-      v.push({ id: 'hire', label: 'Hire', icon: 'hire', cost: `${hireCost()}g`, off: full || S.gold < hireCost(), tip: full ? `All ${beds(cp)} beds are taken. Grow the camp for more.` : 'Someone moves in and works from here.' });
-      const from = movable(cp);
-      if (!full && from) v.push({ id: 'move', label: 'Move in', icon: 'pop', cost: from.name, tip: `${from.name} moves here from the ${lower(campName(homeOf(from)))}.` });
+      if (S.chapter >= 3) v.push({ id: 'hire', label: 'Hire', icon: 'hire', cost: `${hireCost()}g`, off: full || S.gold < hireCost(), tip: full ? `All ${beds(cp)} beds are taken. Grow the camp for more.` : 'Someone moves in and works from here.' });
       const n = nextLevel(cp);
       if (n) v.push({ id: 'grow', label: 'Grow', icon: 'tree', cost: costText(n), off: !n.ok, tip: `Becomes a ${lower(CAMPS[cp.type].name[cp.level])}. Needs ${n.want} living ${cp.type === 'dock' ? 'hexes in the valley' : 'hexes in range'} (${n.have} now).` });
-      if (cp.type === 'wood') v.push({ id: 'cut', label: CUT_TEXT[cp.cut], icon: 'axe', tip: 'How hard this camp cuts the forests in its range.' });
       return v;
     }
     if (ringMenu === 'build') {
@@ -1208,9 +1199,7 @@
     const cp = campAt(t);
     if (id === 'buy') buy(t);
     else if (id === 'hire') hire(cp);
-    else if (id === 'move') { const w = movable(cp); if (w) { w.camp = cp.id; w.task = null; w.taskRole = null; if (!w.carry || w.carry.kind === 'water') { w.carry = null; w.job = null; w.path = w.path.slice(0, 1); } say(`${w.name} moved into the ${lower(campName(cp))}.`); } }
     else if (id === 'grow') upgrade(cp);
-    else if (id === 'cut') { const order = has('selective') ? ['last', 'third', 'dead'] : ['last', 'dead']; cp.cut = order[(order.indexOf(cp.cut) + 1) % order.length]; }
     else if (id === 'build') ringMenu = 'build';
     else if (id === 'back') ringMenu = 'main';
     else if (id === 'prio') t.prio = t.prio % 3 + 1;
@@ -1232,15 +1221,15 @@
   ringEl.addEventListener('pointerover', (e) => { const b = e.target.closest('[data-type]'); placing = b ? b.dataset.type : null; });
   ringEl.addEventListener('pointerout', () => { placing = null; });
   // "Needs you": the next hex or camp waiting on a decision, one tap at a time
-  function needs() {
-    const out = [];
-    S.camps.forEach((c) => { const n = nextLevel(c); if (n && n.ok) out.push([campTile(c), `The ${lower(campName(c))} can grow.`]); });
-    S.camps.forEach((c) => { const ps = people(c); if (ps.length && ps.every((w) => !w.task && !w.carry && !w.path.length)) out.push([campTile(c), `The ${lower(campName(c))} is idle. ${idleWhy(c)}`]); });
-    S.camps.forEach((c) => { if (c.type !== 'dock' && !people(c).length) out.push([campTile(c), `The ${lower(campName(c))} is empty. Hire someone into it.`]); });
-    cells.forEach((t) => { if (t.own && t.rot && t.kind !== 'mine' && !reachedBy(t, 'land')) out.push([t, 'Rot on your land, and no camp in reach burns it.']); });
-    cells.forEach((t) => { const w = stall(t); if (w && w !== 'season') out.push([t, w === 'stock' ? `Waiting for ${Object.keys(JOB[landStep(t)].uses).join(' and ')}.${STOCK_HINT[landStep(t)] || ''}` : STALL_TEXT[w]]); });
-    if (S.boat > 0 && !has('trade') && (surplus('logs') || surplus('food'))) out.push([DOCK, 'The trader\'s boat is in and you have surplus to sell.']);
-    return out;
+  function needs() { // one line per kind of blocker, pointing at the first hex it holds up
+    const out = [], byWhy = new Map();
+    const add = (t, why) => { const e = byWhy.get(why); if (e) e[2]++; else { const n = [t, why, 1]; byWhy.set(why, n); out.push(n); } };
+    S.camps.forEach((c) => { const n = nextLevel(c); if (n && n.ok) add(campTile(c), `The ${lower(campName(c))} can grow.`); });
+    const idle = S.workers.filter((w) => !w.task && (w.idle || 0) > 8);
+    if (idle.length) add(DOCK, `${idle.length === S.workers.length ? 'The whole crew has' : `${idle.length} of the crew ${idle.length === 1 ? 'has' : 'have'}`} nothing to do. ${idleWhy()}`);
+    cells.forEach((t) => { const w = stall(t); if (w && w !== 'season') { const b = blockers(t).find((x) => x.fix) || blockers(t)[0]; if (b) add(t, b.text); } });
+    if (S.boat > 0 && S.chapter >= 3 && !has('trade') && (surplus('logs') || surplus('food'))) add(DOCK, 'The trader\'s boat is in and you have surplus to sell.');
+    return out.map(([t, why, n]) => [t, n > 1 ? `${why} (${n} hexes)` : why]);
   }
   let needI = 0;
   $('needBtn').addEventListener('click', () => {
@@ -1248,7 +1237,134 @@
     const [t, why] = n[needI++ % n.length];
     select(t); needWhy = why;
   });
-  let needWhy = '';
+  // ---------- what a hex is waiting on, and the button that fixes it ----------
+  const BOOST_NAME = { land: 'land work', wood: 'clearing and felling', food: 'fishing and farming', water: 'watering', burn: 'burning rot' };
+  const fmtT = (sec) => (!Number.isFinite(sec) ? 'a long while' : sec < 90 ? `${Math.max(1, Math.ceil(sec))}s` : `${Math.round(sec / 60)} min`);
+  // game-seconds until `need` growth-seconds have passed, season by season
+  function growEta(need) {
+    let s = season(), left = SEASON_LEN - into(), tt = 0;
+    for (let i = 0; i < 12; i++) { const g = GROWTH[s]; if (g * left >= need) return tt + need / g; need -= g * left; tt += left; s = (s + 1) % 4; left = SEASON_LEN; }
+    return Infinity;
+  }
+  function nextSeasonIn(list) { let s = season(), tt = SEASON_LEN - into(); for (let i = 0; i < 4; i++) { s = (s + 1) % 4; if (list.includes(s)) return [s, tt]; tt += SEASON_LEN; } return [s, tt]; }
+  const techOf = (id) => TECH.find((q) => q.id === id);
+  const firstTech = (id) => { let q = techOf(id); while (q.needs && !has(q.needs)) q = techOf(q.needs); return q; }; // the first step on the way to `id`
+  function learnFix(id) {
+    const q = firstTech(id);
+    if (q.ch > S.chapter) return { later: ` It comes in chapter ${q.ch}.` };
+    return { label: `Learn ${q.name}`, cost: techCost(q), off: !canBuy(q), act: () => (canBuy(q) ? learn(q) : openTech(q.id)) };
+  }
+  // the best clear hex of yours for a Seed bed, near `t` and not on a planned hex if it can help it
+  const bedSpot = (t) => cells.filter((x) => x !== t && !x.plan && campFits('nursery', x)).sort((a, b) => dist(a, t) - dist(b, t))[0] || null;
+  const landToBuy = (t) => cells.filter((x) => canOwn(x) && isLand(x) && !x.rot && !x.dead && !TREES.has(x.cover)).sort((a, b) => dist(a, t) - dist(b, t) || price(a) - price(b))[0] || null;
+  const boatFix = (k, n) => (S.boat > 0 && S.chapter >= 3 ? { label: `Buy ${n} ${k} from the boat`, cost: `${n * BUY_PRICE[k]}g`, off: S.gold < n * BUY_PRICE[k], act: () => buyStock(k, n) } : null);
+  const boatWhen = () => (S.chapter < 3 ? '' : S.boat > 0 ? '' : ` The trader's boat comes back ${season() >= AUTUMN ? 'in spring' : `in ${fmtT(SEASON_LEN - into())}`}.`);
+  function seedItems() {
+    const out = [{ text: `No seed in the store.${has('seeds') ? ' The crew gathers it from living forests in autumn.' : ''}${boatWhen()}`, fix: boatFix('seed', 5) }];
+    if (!has('seeds')) { const f = learnFix('seeds'); out.push({ text: `Seed gathering lets the crew collect seed from forests every autumn.${f.later || ''}`, fix: f.later ? null : f }); }
+    return out;
+  }
+  function stockItems(t, k, n) {
+    if (k === 'saplings') {
+      const bed = S.camps.find((c) => c.type === 'nursery'), out = [];
+      if (!bed) {
+        const spot = bedSpot(t), cost = CAMPS.nursery.cost;
+        const lot = !spot && landToBuy(t);
+        out.push({ text: `Saplings are raised from seed at a Seed bed, and you have none yet.${lot ? ' You have no free clear hex to build one on.' : ''}`,
+          fix: spot ? { label: `Build a Seed bed at hex ${spot.c},${spot.r}`, cost: costText(cost), off: !canPay(cost), act: () => { if (canPay(cost)) { const back = sel; build('nursery', spot); select(back); } } }
+            : lot ? { label: `Buy hex ${lot.c},${lot.r} for it`, cost: `${price(lot)}g`, off: S.gold < price(lot), act: () => { const back = sel; buy(lot); select(back); } } : null });
+      }
+      if (S.seed < 1) out.push(...seedItems());
+      else if (bed) { const g = GROWTH[season()] || (has('frames') ? 0.5 : 0), rate = g * (has('nursery') ? 2 : 1) * S.camps.filter((c) => c.type === 'nursery').reduce((a, c) => a + c.level, 0);
+        out.push({ text: `The Seed bed is raising a sapling (${S.seed} seed left).`, bar: [S.nurseT / NURSERY, rate ? `next sapling in ~${fmtT((NURSERY - S.nurseT) / rate)}` : 'paused for winter'] }); }
+      return out;
+    }
+    if (k === 'seed') return seedItems();
+    return [{ text: `Needs ${n} ${k}; the store has ${S[k]}.${k === 'logs' ? ' The crew cuts more when the woodpile runs low.' : ' The crew fishes more when food runs low.'}${boatWhen()}`, fix: boatFix(k, 10) }];
+  }
+  // Everything standing between a hex of yours and its next step, in order, each with a fix where there is one.
+  function blockers(t) {
+    const out = [];
+    if (!t.own || campAt(t)) return out;
+    const on = S.workers.filter((w) => w.task === t).length;
+    if (t.dead && isLand(t)) {
+      out.push({ text: `Dead trees come off first. ${on ? `${on} of the crew ${on === 1 ? 'is' : 'are'} clearing them.` : 'The crew clears them when free.'} Tap again to help.`, bar: [1 - t.dead / DEADWOOD, `${t.dead} logs left`] });
+      return out;
+    }
+    const j = landStep(t);
+    if (j) {
+      const job = JOB[j];
+      if (job.tech && !has(job.tech)) { const f = learnFix(job.tech); out.push({ text: `${job.name} needs the ${techOf(job.tech).name} upgrade.${f.later || ''}`, fix: f.later ? null : f }); return out; }
+      if (!inSeason(j)) { const [ns, tt] = nextSeasonIn(job.seasons); out.push({ text: `${job.name} is done in ${job.seasons.map((x) => SEASONS[x].toLowerCase()).join(' and ')}. ${SEASONS[ns]} starts in ${fmtT(tt)}.` }); return out; }
+      const lack = Object.entries(job.uses || {}).filter(([k, n]) => S[k] < n);
+      if (lack.length) { lack.forEach(([k, n]) => out.push(...stockItems(t, k, n))); return out; }
+      const rate = on * boostAt(t, j) * (j === 'loosen' && !has('hoes') ? 0.5 : 1) * (j === 'loosen' && season() === SUMMER ? 0.5 : 1);
+      out.push({ text: `${job.name}${boostAt(t, j) > 1 ? ' (a camp nearby makes it twice as fast)' : ''}.`, bar: [t.work / job.work, rate ? `~${fmtT((job.work - t.work) / rate)}` : on ? 'on the way' : 'waiting for a free hand'] });
+      return out;
+    }
+    if (t.kind === 'marsh' && t.marsh === 'blocked') { const left = (WINTER - season()) * SEASON_LEN + SEASON_LEN - into(); out.push({ text: 'Ditches blocked. The spring flood will stay and heal it.', bar: [1 - left / (SEASON_LEN * 4), `spring in ~${fmtT(left)}`] }); }
+    if (!isLand(t)) return out;
+    const g = GROWTH[season()], winterNote = g ? '' : ` Nothing grows in winter; spring is ${fmtT(SEASON_LEN - into())} away.`;
+    const grow = (from, to, need) => out.push({ text: `${from} growing into ${to}.${winterNote}`, bar: [t.grow / need, `~${fmtT(growEta(need - t.grow))}`] });
+    if (t.cover === 'seedlings') grow('Seedlings', 'young wood', SEEDLING_GROW);
+    else if (t.cover === 'young') grow('Young wood', 'a pine stand', YOUNG_GROW);
+    else if (t.cover === 'clover') grow('Clover', 'grassland', CLOVER_GROW);
+    else if (t.plan === 'field' && t.cover === 'bare') {
+      const nb = nbs(t).some((n) => living(n) && !campAt(n) && n.kind !== 'scenery');
+      if (nb) out.push({ text: `Grass is creeping in from the living land next to it.${winterNote}`, bar: [t.grow / GRASS_CREEP, `~${fmtT(growEta(GRASS_CREEP - t.grow))}`] });
+      else if (!has('clover')) { const f = learnFix('clover'); out.push({ text: `Grass only creeps in from living land next to it, and nothing next to this hex is alive. Clover can be sown instead.${f.later || ''}`, fix: f.later ? null : f }); }
+      else out.push(...seedItems());
+    }
+    if (PLANTS.has(t.cover) && t.water === 0) out.push({ text: 'Thirsty: it stops growing and wilts in summer without water. The crew waters it; tap to water it yourself.' });
+    return out;
+  }
+  // ---------- chapters: one goal at a time, asked for by a glowing hex ----------
+  const bareOwn = (t) => t.own && isLand(t) && !t.rot && !t.dead && !campAt(t) && t.cover === 'bare';
+  const nearDock = (f) => cells.filter(f).sort((a, b) => dist(a, DOCK) - dist(b, DOCK) || a.c - b.c)[0] || null;
+  const CHAPTERS = [null,
+    { name: 'Warm hearth', unlocks: 'the tech tree',
+      goal: () => 'Clear the deadwood by the dock',
+      pick: () => nearDock((t) => t.own && t.dead),
+      done: (t) => !t || !t.dead,
+      whisper: () => 'Winter needs firewood. Your crew is clearing these dead trees into logs; tap this hex again to help, three taps a log.' },
+    { name: 'First green', unlocks: 'hiring, camps and the trader\'s boat',
+      goal: () => 'Turn bare ground into grassland',
+      pick: () => nearDock((t) => bareOwn(t) && !t.stumps && t.soil >= 1),
+      done: (t) => !t || ['grass', 'clover', 'meadow'].includes(t.cover),
+      whisper: (t) => (t.plan === 'field' ? 'The Field plan is set. The crew loosens and feeds the soil, then grass creeps in from the living land next to it. The bar below shows how long.' : 'Give this hex the Field plan from the action bar. The crew will ready the soil and grass will follow.') },
+    { name: 'Shelter', unlocks: 'Forest plans, the Seed bed and the well',
+      goal: () => `Grow your crew to 4 (${S.workers.length} now)`,
+      pick: () => DOCK,
+      done: () => S.workers.length >= 4,
+      whisper: () => (people(dockCamp()).length < beds(dockCamp()) ? 'Hire someone into the dock from the action bar. When its beds are full, build a camp on your land: it adds beds and makes nearby work twice as fast.' : 'The dock is full. Build a camp on a clear hex of yours (Build in the action bar) for more beds, then hire into it.') },
+    { name: 'First forest', unlocks: 'marsh and river plans and the fire watch',
+      goal: () => 'Grow a forest from saplings',
+      pick: () => nearDock((t) => t.own && isLand(t) && t.plan === 'forest' && !TREES.has(t.cover)) || nearDock((t) => bareOwn(t) && !t.plan) || nearDock((t) => canOwn(t) && isLand(t) && !t.rot && !TREES.has(t.cover)),
+      done: () => (S.done.grown || 0) >= 1,
+      whisper: (t) => (!t.own ? 'Buy this hex for your first forest. Then give it the Forest plan.' : PLANTS.has(t.cover) ? 'Your saplings are in. They grow outside winter and need water in summer; the bar below shows how long until they are a forest.' : t.plan === 'forest' ? 'Saplings come from seed at a Seed bed. Follow the steps below; each has a button for what is missing.' : 'Give this hex the Forest plan. The steps it needs show up below, each with a button for what is missing.') },
+    { name: 'Living water', unlocks: 'the rest of the valley, at your own pace',
+      goal: () => 'Heal a marsh or clean a stretch of river',
+      pick: () => nearDock((t) => t.kind === 'marsh' && t.marsh !== 'healed' && (t.own || canOwn(t))) || nearDock((t) => t.kind === 'river' && t.river === 'dirty'),
+      done: () => (S.done.healed || 0) >= 1,
+      whisper: (t) => (!t.own ? 'Buy this hex first. Then give it a plan to heal it.' : t.kind === 'marsh' ? (t.marsh === 'blocked' ? 'The ditches are blocked. When spring comes, the flood water stays and the marsh comes back to life.' : 'Give it the Heal marsh plan. The crew blocks the settlers\' ditches, and the next spring flood does the rest.') : 'Give it the Clean river plan, then follow the steps below.') },
+  ];
+  const goalHex = () => (S.target >= 0 && CHAPTERS[S.chapter] ? cells[S.target] : null);
+  function stepChapter() {
+    const ch = CHAPTERS[S.chapter]; if (!ch) return;
+    if (S.target < 0) { const p = ch.pick(); S.target = idx(p); if (p) return; } // a new goal shows for a moment before it can be met
+    let t = goalHex();
+    if (ch.done(t)) {
+      S.chapter++; S.target = -1;
+      const nx = CHAPTERS[S.chapter];
+      if (S.chapter === 4) { S.seed += 6; fx(DOCK, '+6 seed', '#9bcb3e'); } // the trader leaves seed for a first forest
+      notice(`Chapter ${S.chapter - 1} done. Unlocked: ${ch.unlocks}.${S.chapter === 4 ? ' The trader left you 6 seed.' : ''}${nx ? ` Next: ${nx.goal().toLowerCase()}.` : ' The whole valley is yours to heal.'}`);
+      lastKey = ''; return;
+    }
+    if (!t || !keepTarget(t)) S.target = idx(ch.pick());
+  }
+  // a chosen goal hex stays put while it still fits, so the glow doesn't jump around
+  const keepTarget = (t) => [null, (x) => x.dead, (x) => isLand(x) && !x.rot && !campAt(x), () => true, (x) => isLand(x) && !x.rot && !campAt(x) && !TREES.has(x.cover) && (x.own || canOwn(x)), (x) => x.kind === 'marsh' || x.kind === 'river'][S.chapter](t);
+  let needWhy = '', fixes = [];
   function updateTilePanel() {
     const t = sel, panel = $('tilePanel');
     panel.hidden = !t;
@@ -1266,8 +1382,9 @@
       const ps = people(cp), n = nextLevel(cp);
       const mourn = S.graves.filter((g) => g.season === S.seasonCount && g.camp === cp.id);
       $('tCamp').innerHTML = `<p class="beds">${'▮'.repeat(ps.length)}${'▯'.repeat(Math.max(0, beds(cp) - ps.length))} <b>${ps.length} of ${beds(cp)} beds</b> · level ${cp.level}${cp.type === 'dock' ? ` · +${DOCK_YIELD[cp.level - 1]}g/min` : ''}</p>`
-        + `<p class="who">${ps.map((w) => `<span class="${w.hungry || w.cold || w.sick > SICKEN / 4 ? 'hurt' : ''}">${w.name}${'★'.repeat(skill(w, rolesOf(w)[0]))}</span>`).join(' ') || '<span class="empty">No one lives here yet.</span>'}${mourn.map((g) => ` <span class="gone">${g.name}</span>`).join('')}</p>`
-        + (ps.some((w) => w.task) ? `<p class="doing">${doing(cp)}</p>` : ps.length && !ps.some((w) => w.carry || w.path.length) ? `<p class="doing idle">${idleWhy(cp)}</p>` : '')
+        + `<p class="who">${ps.map((w) => `<span class="${w.hungry || w.cold || w.sick > SICKEN / 4 ? 'hurt' : ''}">${w.name}${'★'.repeat(skill(w, bestAt(w)))}</span>`).join(' ') || '<span class="empty">No one lives here yet.</span>'}${mourn.map((g) => ` <span class="gone">${g.name}</span>`).join('')}</p>`
+        + (ps.some((w) => w.task) ? `<p class="doing">${doing(cp)}</p>` : ps.length && !ps.some((w) => w.carry || w.path.length) ? `<p class="doing idle">Resting. ${idleWhy()}</p>` : '')
+        + (CAMPS[cp.type].boost.length ? `<p class="next">Makes ${CAMPS[cp.type].boost.map((b) => BOOST_NAME[b]).join(' and ')} twice as fast within ${rangeOf(cp)} ${rangeOf(cp) === 1 ? 'hex' : 'hexes'}. Anyone in the crew can sleep here.</p>` : '')
         + (n ? `<p class="next">Grows when ${n.have >= n.want ? '✓' : `${n.have}/${n.want}`} living ${cp.type === 'dock' ? 'hexes in the valley' : 'hexes in range'} · ${costText(n)}</p>` : '');
     }
     const ch = t.plan && !cp ? chips(t) : [];
@@ -1276,7 +1393,7 @@
     const lockedStep = why === 'tech' && landStep(t) && JOB[landStep(t)].tech;
     $('tSteps').innerHTML = ch.map(([n, done], i) => (i === cur && lockedStep ? `<button class="chip-step now locked" data-tech="${lockedStep}" title="Needs ${TECH.find((q) => q.id === lockedStep).name}">🔒 ${n}</button>`
       : `<span class="chip-step${done ? ' done' : i === cur ? ' now' : ''}">${n}</span>`)).join('<span class="arr">›</span>');
-    $('tDock').hidden = !dock;
+    $('tDock').hidden = !dock || S.chapter < 3;
     if (dock) {
       const boat = S.boat > 0;
       $('dockBoat').textContent = boat ? `The trader's boat is in for ${Math.ceil(S.boat)}s.` : winter() ? 'The market is shut for winter.' : 'Between boats, the market stall sells surplus slowly.';
@@ -1288,25 +1405,26 @@
       $('buySeed').innerHTML = `Buy 5 seed <span class="cost">${5 * BUY_PRICE.seed}g</span>`; $('buySeed').disabled = !boat || S.gold < 5 * BUY_PRICE.seed;
       $('dockStock').textContent = `${S.seed} seed · ${S.saplings} saplings`;
     }
+    fixes = t.own && !cp ? blockers(t) : [];
+    $('tFix').innerHTML = fixes.map((f, i) => `<div class="fix"><p>${f.text}</p>${f.bar ? `<div class="pbar"><i style="width:${Math.round(Math.max(0, Math.min(1, f.bar[0])) * 100)}%"></i><span>${f.bar[1]}</span></div>` : ''}`
+      + `${f.fix ? `<button class="btn mini fixbtn${f.fix.off ? ' off' : ''}" data-fix="${i}">${f.fix.label}${f.fix.cost ? ` <span class="cost">${f.fix.cost}</span>` : ''}</button>` : ''}</div>`).join('');
+    $('tFix').hidden = !fixes.length;
+    $('tWhisper').hidden = !(goalHex() === t && CHAPTERS[S.chapter]);
+    if (!$('tWhisper').hidden) $('tWhisper').textContent = CHAPTERS[S.chapter].whisper(t);
     let note = needWhy;
     if (!note) {
       if (!t.own) note = canOwn(t) ? '' : t.kind === 'lake' ? '' : 'Only land next to your border can be bought.';
-      else if (why) {
-        const j = landStep(t);
-        const tq = why === 'tech' && TECH.find((q) => q.id === JOB[j].tech), tn = tq && tq.needs && !has(tq.needs) ? `, after ${TECH.find((q) => q.id === tq.needs).name}` : '';
-        note = why === 'tech' ? `Locked: ${lower(JOB[j].name)} needs the ${tq.name} upgrade (${BRANCHES[tq.col]} branch${tn}).${j === 'sow' ? ' Until then, grass creeps in on its own from living land next to it.' : ''}`
-          : why === 'season' ? `${JOB[j].name}: ${JOB[j].seasons.map((x) => SEASONS[x].toLowerCase()).join(', ')} only.`
-            : why === 'stock' ? `${JOB[j].name} needs ${Object.entries(JOB[j].uses).map(([k, n]) => `${n} ${k}`).join(', ')} at the dock.${STOCK_HINT[j] || ''}` : STALL_TEXT[why];
-      } else if (t.plan && t.dead && isLand(t)) note = reachedBy(t, 'wood') ? 'Dead trees come off first. Woodcutters clear them, then the land crew starts. Tap again to help.' : 'Dead trees come off first, and no woodcutter camp is near. Idle woodcutters walk out to it; a woodcutter\'s tent within 2 hexes does it much faster. Tap again to help.';
-      else if (!cp && helpable(t)) note = 'Tap the hex again to lend a hand.';
-      else if (t.own && !cp && plansFor(t).length && !t.plan) note = 'Pick a plan or build a camp from the ring.';
+      else if (!cp && helpable(t) && !fixes.length) note = 'Tap the hex again to lend a hand.';
+      else if (t.own && !cp && plansFor(t).length && !t.plan) note = 'Pick a plan or build a camp from the action bar.';
     }
-    const lockId = !needWhy && why === 'tech' && landStep(t) && JOB[landStep(t)].tech;
-    $('tNote').innerHTML = lockId ? `${note} <button class="lock" data-tech="${lockId}">🔒 See ${TECH.find((q) => q.id === lockId).name} in the tech tree</button>` : note.replace(/</g, '&lt;');
+    $('tNote').textContent = note;
   }
   const helpable = (t) => { const j = landStep(t); return (j && !stall(t)) || t.dead || (isForest(t) && t.wood > cutLimit(t)) || (FISHY(t) && !campAt(t)) || (isLand(t) && PLANTS.has(t.cover) && t.water < 2); };
   $('tClose').addEventListener('click', () => select(null));
   $('tilePanel').addEventListener('click', (e) => { const b = e.target.closest('[data-tech]'); if (b) openTech(b.dataset.tech); });
+  // fix-it buttons act on press, before the panel can redraw under the pointer
+  $('tFix').addEventListener('pointerdown', (e) => { const b = e.target.closest('[data-fix]'); const f = b && fixes[+b.dataset.fix]; if (f && f.fix) { track(`fix "${f.fix.label}"`); f.fix.act(); lastKey = ''; } });
+  $('tFix').addEventListener('click', (e) => { if (e.detail) return; const b = e.target.closest('[data-fix]'); const f = b && fixes[+b.dataset.fix]; if (f && f.fix) { f.fix.act(); lastKey = ''; } }); // the keyboard
   $('sellSurplus').addEventListener('click', () => { sellSurplus(); lastKey = ''; });
   $('buyLogs').addEventListener('click', () => { buyStock('logs', 10); lastKey = ''; });
   $('buyFood').addEventListener('click', () => { buyStock('food', 10); lastKey = ''; });
@@ -1333,13 +1451,11 @@
     const verb = { clear: 'Clearing', fell: 'Felling', water: 'Watering', fish: 'Fishing', farm: 'Farming', seed: 'Gathering seed on', loosen: 'Loosening', mulch: 'Mulching', compost: 'Composting', plant: 'Planting', sow: 'Sowing', pull: 'Pulling stumps on', burn: 'Burning', block: 'Blocking ditches on', reedbed: 'Building a reed bed on' }[j] || 'Working';
     return `${verb} the ${lower(nameOf(t))}${working.length > 1 && working.some((w) => w.task !== t) ? ' and more' : ''}`;
   }
-  // Why a camp's people are sitting at home, and what would get them out.
-  function idleWhy(c) {
-    const hint = { wood: 'there is no deadwood or forest to cut in the valley', pier: winter() ? 'the ponds are frozen and the sea is too rough' : 'there is no fishing water near enough',
-      well: 'every plant has water', garden: 'no land of yours has a plan with a step they can do now', nursery: 'no land of yours has a plan with a step they can do now',
-      watch: 'no land of yours has a plan with a step they can do now', dock: 'there is nothing they can do right now' }[c.type];
-    const fix = { wood: 'Buy land with dead trees or forest.', pier: '', well: '', dock: 'Buy land next to your border and give it a plan.' }[c.type] ?? 'Buy land next to your border, give it a plan (field, meadow or forest), or unlock the next step in the tech tree.';
-    return `Resting at home: ${hint}.${winter() && c.type !== 'pier' ? ' Most work waits for spring.' : ''} ${fix}`.trim();
+  // Why the crew has nothing to do, and what would give them work.
+  function idleWhy() {
+    if (winter()) return 'It is winter: land work waits for spring. They still fish, fell and clear deadwood.';
+    if (!cells.some((t) => t.own && t.plan && t.plan !== 'rest')) return S.chapter >= 2 ? 'No land of yours has a plan. Tap a hex you own and pick one.' : 'Nothing is left to clear. Buy land next to your border.';
+    return 'Every plan is waiting on something. Tap a hex with a marker to see what.';
   }
   let speed = 1, view = 'menu';
   const running = () => view === 'game';
@@ -1369,11 +1485,15 @@
     const nk = toasts.map((n) => n.text).join('|');
     if (nk !== lastNotes) { lastNotes = nk; $('notes').innerHTML = toasts.map((n) => `<div class="panel notice${n.bad ? ' bad' : ''}">${n.text}</div>`).join(''); }
     const k = [S.gold, S.food, S.logs, S.seed, S.saplings, Math.ceil(S.boat), S.workers.map((w) => `${w.camp}${idx(w.task)}${w.taskJob}${w.hungry}${w.cold}`).join(), S.log.join(), Object.keys(S.tech).join(), s, S.keep.logs, S.keep.food,
-      S.camps.map((c) => `${c.level}${c.cut}`).join(), ringOpen, ringMenu, sel && sigs[idx(sel)], sel && sel.plan, sel && sel.prio, sel && sel.wood, sel && sel.dead, sel && sel.work > 0, sel && stall(sel)].join('|');
+      S.camps.map((c) => c.level).join(), ringOpen, ringMenu, sel && sigs[idx(sel)], sel && sel.plan, sel && sel.prio, sel && sel.wood, sel && sel.dead, sel && Math.floor(sel.work), sel && Math.floor(sel.grow / 2), sel && stall(sel), Math.floor(S.nurseT), Math.floor(S.time / 3), S.chapter, S.target, S.camps.length].join('|');
     if (k === lastKey) return;
     lastKey = k;
     if (sel === null) needWhy = '';
+    $('treeBtn').hidden = S.chapter < 2;
     $('treeBtn').querySelector('.lbl').textContent = TECH.some((t) => canBuy(t)) ? 'Tech •' : 'Tech';
+    const chp = CHAPTERS[S.chapter];
+    $('goal').hidden = !chp;
+    if (chp) $('goal').innerHTML = `<small>Chapter ${S.chapter} · ${chp.name}</small><b>${chp.goal()}</b>`;
     const nd = needs().length;
     $('needBtn').querySelector('.lbl').textContent = nd ? `Needs you · ${nd}` : 'All quiet';
     $('needBtn').classList.toggle('go', nd > 0); $('needBtn').disabled = !nd;
@@ -1421,8 +1541,11 @@
   const eureka = (t) => { const e = EUREKA[t.id]; return !!e && (S.done[e[0]] || 0) >= e[1]; };
   const goldCost = (t) => (eureka(t) ? Math.ceil(t.cost / 2) : t.cost);
   const afford = (t) => S.gold >= goldCost(t) && S.logs >= (t.logs || 0) && S.food >= (t.food || 0);
-  const canBuy = (t) => !t.soon && !owned(t) && unlocked(t) && afford(t);
+  const canBuy = (t) => !t.soon && !owned(t) && unlocked(t) && afford(t) && t.ch <= S.chapter;
+  const techCost = (t) => [`${goldCost(t)}g`, t.logs && `${t.logs} logs`, t.food && `${t.food} food`].filter(Boolean).join(' + ');
+  function learn(t) { if (!canBuy(t)) return; S.gold -= goldCost(t); S.logs -= t.logs || 0; S.food -= t.food || 0; S.tech[t.id] = true; say(`${t.name} learned.`); save(); lastKey = ''; }
   $('treeBtn').addEventListener('click', () => { drawTree(); show('tree'); });
+  $('goal').addEventListener('click', () => { const t = goalHex(); if (t) select(t); });
   $('treeBack').addEventListener('click', () => show('game'));
   const graph = $('graph');
   graph.insertAdjacentHTML('beforeend', BRANCHES.map((n, i) => `<span class="branch" style="left:${COLX[i]}%">${n}</span>`).join('')
@@ -1430,12 +1553,13 @@
   $('links').innerHTML = TECH.filter((t) => t.needs).map((t) => { const p = TECH.find((q) => q.id === t.needs); return `<line id="l-${t.id}" x1="${p.x}" y1="${p.y}" x2="${t.x}" y2="${t.y}" vector-effect="non-scaling-stroke" style="stroke-width:4px"/>`; }).join('');
   function drawTree() {
     $('treeGold').textContent = S.gold;
+    $('treeMore').textContent = CHAPTERS[S.chapter] ? `More upgrades appear as the valley unfolds (chapter ${S.chapter} of ${CHAPTERS.length - 1}).` : '';
     const path = goal ? chain(TECH.find((t) => t.id === goal)) : [];
     if (goal && !path.length) goal = null; // reached it
     TECH.forEach((t) => {
       const n = $(`n-${t.id}`);
-      n.className = `node${owned(t) ? ' owned' : ''}${canBuy(t) ? ' ready' : ''}${!unlocked(t) ? ' locked' : ''}${t.soon ? ' soon' : ''}${path.includes(t.id) ? ' goal' : ''}`;
-      const l = $(`l-${t.id}`); if (l) l.setAttribute('stroke', unlocked(t) ? (owned(t) ? '#9bcb3e' : '#e6c35a') : '#3a4656');
+      n.className = `node${owned(t) ? ' owned' : ''}${canBuy(t) ? ' ready' : ''}${!unlocked(t) ? ' locked' : ''}${t.soon ? ' soon' : ''}${path.includes(t.id) ? ' goal' : ''}${t.ch > S.chapter ? ' hidden' : ''}`;
+      const l = $(`l-${t.id}`); if (l) { l.setAttribute('stroke', unlocked(t) ? (owned(t) ? '#9bcb3e' : '#e6c35a') : '#3a4656'); l.style.display = t.ch > S.chapter ? 'none' : ''; }
     });
   }
   let picked = null;
@@ -1470,8 +1594,7 @@
   $('popNo').addEventListener('click', () => show('tree'));
   $('popYes').addEventListener('click', () => {
     const t = picked; if (!t || !canBuy(t)) return;
-    S.gold -= goldCost(t); S.logs -= t.logs || 0; S.food -= t.food || 0; S.tech[t.id] = true; say(`${t.name} learned.`); save();
-    drawTree(); show('tree');
+    learn(t); drawTree(); show('tree');
   });
   addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
@@ -1544,7 +1667,7 @@
     if (S.flood > 0) S.flood = Math.max(0, S.flood - dt);
     if (S.boat > 0) S.boat = Math.max(0, S.boat - dt);
     [...S.workers].forEach((w) => stepWorker(w, dt));
-    stepNeeds(dt); stepLand(dt); stepIncome(dt); stepMiles();
+    stepNeeds(dt); stepLand(dt); stepIncome(dt); stepMiles(); stepChapter();
   }
   let fault = 0;
   function frame(now) {
