@@ -109,7 +109,7 @@
     { id: 'selective', name: 'Selective felling', icon: 'forestry', cost: 60, col: 3, row: 1, needs: 'axes', text: 'Woodcutters can be told to leave a third of every stand, so it keeps growing while it is worked.' },
     { id: 'stumps', name: 'Stump pulling', icon: 'axe', cost: 50, col: 3, row: 2, needs: 'axes', text: 'The land crew pulls stumps out for firewood, so stump fields can become fields.' },
     { id: 'ditchblock', name: 'Ditch blocking', icon: 'drop', cost: 60, logs: 30, col: 4, row: 0, text: 'You can build a Fire watch camp. Block the settlers\' ditches on a drained marsh (10 logs). At the next spring flood the water stays and the marsh heals.' },
-    { id: 'reeds', name: 'Reed beds', icon: 'reeds', cost: 100, logs: 30, col: 4, row: 1, needs: 'ditchblock', text: 'Build a reed bed on a dirty river tile (15 logs) to clean it. Needs a healed marsh of yours for the reeds.' },
+    { id: 'reeds', name: 'Reed beds', icon: 'reeds', cost: 100, logs: 30, col: 4, row: 1, needs: 'ditchblock', text: 'Build a reed bed on a dirty river tile (15 logs) to clean it.' },
     { id: 'quarry', name: 'Quarrying', icon: 'stone', col: 4, row: 2, needs: 'reeds', soon: true, text: 'Stone and lime from the hills. Coming in a later prototype.' },
     { id: 'seal', name: 'Mine sealing', icon: 'seal', col: 4, row: 3, needs: 'quarry', soon: true, text: 'Seal the leaking mine and the rot stops for good. Coming in a later prototype.' },
     { id: 'fishing', name: 'Fishing nets', icon: 'fishing', cost: 30, col: 5, row: 0, text: 'Fishers catch twice as many fish.' },
@@ -340,7 +340,6 @@
     const j = landStep(t);
     if (!j) return null;
     if (JOB[j].tech && !has(JOB[j].tech)) return 'tech';
-    if (j === 'reedbed' && !cells.some((o) => o.own && o.kind === 'marsh' && o.marsh === 'healed')) return 'marsh';
     if (!inSeason(j)) return 'season';
     if (!stocked(j)) return 'stock';
     if (!reachedBy(t, 'land')) return S.workers.some((w) => rolesOf(w).includes('land')) ? 'hands' : 'nohands';
@@ -445,7 +444,6 @@
           const j = landStep(t);
           if (!j || (JOB[j].tech && !has(JOB[j].tech)) || !inSeason(j) || !stocked(j) || busy(t, w) >= 3) continue;
           if (j === 'burn' && w.sick > SICKEN * 0.3) continue; // rest away from the rot before the next burn
-          if (j === 'reedbed' && !cells.some((o) => o.own && o.kind === 'marsh' && o.marsh === 'healed')) continue;
           out.push({ t, role, job: j, score: (j === 'burn' ? 5 : t.prio) * 1000 - d(t) });
         }
         if (season() === AUTUMN && has('seeds') && S.seed < 12) for (const t of seen) if (isForest(t) && busy(t, w) < 2) out.push({ t, role, job: 'seed', score: 500 - d(t) });
@@ -770,7 +768,7 @@
     if (!t || !t.own || S.over) return false;
     const hand = has('gloves') ? 2 : 1, j = landStep(t);
     const tap = (n, f) => { t.tap = (t.tap || 0) + hand; if (t.tap >= n) { t.tap = 0; f(); } else fx(t, '·'.repeat(Math.min(n, t.tap)), '#f4f6ea'); };
-    if (j && (!JOB[j].tech || has(JOB[j].tech)) && inSeason(j) && stocked(j) && !(j === 'reedbed' && !cells.some((o) => o.own && o.kind === 'marsh' && o.marsh === 'healed'))) {
+    if (j && (!JOB[j].tech || has(JOB[j].tech)) && inSeason(j) && stocked(j)) {
       t.work += HELP * hand; fx(t, `+${JOB[j].name.toLowerCase()}`, '#9bcb3e');
       if (t.work >= JOB[j].work) finish(t, j);
     } else if (t.dead) tap(TAPS, () => { cut(t, 'clear'); S.logs++; fx(t, '+1 log', '#e2bd78'); });
@@ -1296,7 +1294,7 @@
       else if (why) {
         const j = landStep(t);
         const tq = why === 'tech' && TECH.find((q) => q.id === JOB[j].tech), tn = tq && tq.needs && !has(tq.needs) ? `, after ${TECH.find((q) => q.id === tq.needs).name}` : '';
-        note = why === 'tech' ? `Locked: ${lower(JOB[j].name)} needs the ${tq.name} upgrade (${BRANCHES[tq.col]} branch${tn})${j === 'reedbed' ? ' and a healed marsh' : ''}.${j === 'sow' ? ' Until then, grass creeps in on its own from living land next to it.' : ''}`
+        note = why === 'tech' ? `Locked: ${lower(JOB[j].name)} needs the ${tq.name} upgrade (${BRANCHES[tq.col]} branch${tn}).${j === 'sow' ? ' Until then, grass creeps in on its own from living land next to it.' : ''}`
           : why === 'season' ? `${JOB[j].name}: ${JOB[j].seasons.map((x) => SEASONS[x].toLowerCase()).join(', ')} only.`
             : why === 'stock' ? `${JOB[j].name} needs ${Object.entries(JOB[j].uses).map(([k, n]) => `${n} ${k}`).join(', ')} at the dock.${STOCK_HINT[j] || ''}` : STALL_TEXT[why];
       } else if (t.plan && t.dead && isLand(t)) note = reachedBy(t, 'wood') ? 'Dead trees come off first. Woodcutters clear them, then the land crew starts. Tap again to help.' : 'Dead trees come off first, and no woodcutter camp is near. Idle woodcutters walk out to it; a woodcutter\'s tent within 2 hexes does it much faster. Tap again to help.';
