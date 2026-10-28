@@ -13,6 +13,7 @@ No build step and no dependencies beyond Node (for the tools).
 | Do this | Command |
 |---|---|
 | Play the prototype | Open `play.html` in a browser |
+| Play prototype v2 (frozen) | Open `archive/6-prototype-v2/play.html` |
 | Play prototype v1 (frozen) | Open `archive/5-prototype-v1/play.html` |
 | View the map, tile set and checks | Open `index.html` in a browser |
 | Run the art checks (also runs in CI) | `node tools/check.js` |
@@ -24,7 +25,7 @@ No build step and no dependencies beyond Node (for the tools).
 index.html              Tile viewer: world map with hover tooltips, the tile set, the five-tile isle, the checks
 src/tiles.js            The tile engine: grid, palette, every sprite, every tile layout, maps, checks
 src/viewer.js           Viewer page logic
-play.html               Prototype v2, Restore the Valley: heal a ruined Verdant Reach and keep the crew alive
+play.html               Prototype v3, Healing the Land: soil, food and water per tile, plans, crews, the dock and the trader
 src/game.js             Prototype game logic, the ruined map and its art, and the HUD
 src/icons.js            Pixel-art HUD and tech tree icons
 art/tiles/*.png         One PNG per terrain, 32x48 at 1x
@@ -38,6 +39,7 @@ docs/game-design.md     The game concept and what each terrain is for
 docs/art-history.md     How the style was found, step by step
 archive/                Earlier explorations, kept runnable (see docs/art-history.md)
 archive/5-prototype-v1/ Prototype v1 frozen: the clean Verdant Reach map and its game
+archive/6-prototype-v2/ Prototype v2 frozen: Restore the Valley, workers posted on tiles by hand
 ```
 
 ## The tile set

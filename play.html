@@ -122,6 +122,75 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 .end .why { font-size: 16px; color: #ffd9de; }
 .end .btn { width: 100%; justify-content: center; font-size: 18px; }
 
+
+/* ---- v3: ribbon, crews, lenses, tile values, plans and steps, dock ---- */
+.ribbon { position: relative; }
+#ribbon { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+.seg { display: flex; justify-content: center; gap: 2px; padding: 2px 0; background: var(--deep0); border: 1px solid var(--ink); opacity: .55; }
+.seg.on { opacity: 1; background: var(--deep2); }
+.seg img { width: 12px; height: 12px; image-rendering: pixelated; }
+#nowMark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--gold); box-shadow: 0 0 0 1px var(--ink); }
+.btn.mini { font-size: 13px; padding: 2px 7px; }
+.lenses { display: flex; gap: 4px; }
+.lenses .btn { padding: 4px 8px; font-size: 13px; width: auto; }
+.lenses .btn[aria-pressed="true"] { background: var(--leaf); box-shadow: inset 2px 2px 0 var(--leaf-hi), inset -2px -2px 0 var(--leaf-lo); }
+.crews { display: grid; gap: 6px; width: 250px; }
+.crew { padding: 6px 8px; display: grid; gap: 3px; border-left: 4px solid var(--hue, var(--muted)); }
+.crew .ch { display: flex; align-items: center; gap: 6px; }
+.crew .ch img.ic { width: 18px; height: 18px; }
+.crew .ch b { font-family: var(--display); font-weight: 600; font-size: 15px; flex: 1; }
+.crew .ch .n { font-family: var(--display); font-size: 15px; color: var(--gold); min-width: 14px; text-align: right; }
+.crew p { margin: 0; font-size: 12.5px; line-height: 1.3; }
+.crew .who span { white-space: nowrap; }
+.crew .who .hurt { color: var(--rose-hi); }
+.crew .who .gone { color: var(--muted); text-decoration: line-through; }
+.crew .who .empty { color: var(--muted); }
+.crew .doing { color: var(--muted); }
+.crew .doing:empty { display: none; }
+.crew .cut { justify-self: start; }
+.side .crews .btn { width: auto; }
+.vals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.val { background: var(--deep0); border: 2px solid var(--ink); padding: 3px 6px; display: grid; }
+.val small { font-family: var(--display); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.val b { font-family: var(--display); font-weight: 600; font-size: 15px; }
+.val i { font-style: normal; color: var(--lime); letter-spacing: 1px; font-size: 11px; }
+.plans { display: flex; gap: 6px; flex-wrap: wrap; }
+.plans .btn { padding: 5px 9px; font-size: 14px; }
+.plans .btn.plan.on { background: var(--pc); box-shadow: inset 2px 2px 0 rgba(255,255,255,.35), inset -2px -2px 0 rgba(0,0,0,.35); }
+.plans .prio { color: var(--gold); letter-spacing: 2px; }
+.steps { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; font-size: 12.5px; }
+.chip-step { padding: 1px 6px; border: 1px solid var(--ink); background: var(--deep0); color: var(--muted); }
+.chip-step.done { background: var(--leaf-lo); color: var(--leaf-hi); text-decoration: line-through; }
+.chip-step.now { background: var(--deep2); color: var(--cream); border-color: var(--gold); }
+.steps .arr { color: var(--muted); }
+.dock { display: grid; gap: 6px; }
+.dock p { margin: 0; }
+.keep { display: flex; align-items: center; gap: 6px; }
+.keep span { flex: 1; }
+.keep b { font-family: var(--display); min-width: 26px; text-align: center; }
+#sellSurplus { justify-content: center; }
+.buyrow { display: flex; gap: 6px; }
+.buyrow .btn { flex: 1; justify-content: center; padding: 6px 8px; font-size: 14px; }
+.graph { aspect-ratio: 6 / 5; }
+.node { width: 9.5%; aspect-ratio: 6 / 5; }
+.node span { font-size: 11px; bottom: -18px; }
+.branch { position: absolute; top: 0; transform: translateX(-50%); font-family: var(--display); font-size: 11px; color: var(--muted); white-space: nowrap; padding-top: 2px; }
+.tree { width: min(760px, 100%); }
+@media (max-width: 720px) {
+  .side { top: 84px; bottom: auto; left: var(--gutter-l); right: var(--gutter-r); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; grid-auto-flow: unset; }
+  .side .btn { width: auto; }
+  .lenses { position: fixed; left: var(--gutter-l); bottom: 136px; }
+  .crews { position: fixed; left: var(--gutter-l); right: var(--gutter-r); bottom: 84px; width: auto; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .crew { padding: 3px 4px; border-left-width: 3px; }
+  .crew .ch { gap: 3px; }
+  .crew .ch .n { min-width: 0; }
+  .crew .who, .crew .doing, .crew .cut, .crew .ch b { display: none; }
+  .crew .btn.mini { padding: 1px 5px; font-size: 12px; }
+  .tile { top: 130px; }
+  .notes { bottom: 180px; }
+  .node span { font-size: 9px; }
+  .branch { font-size: 8px; }
+}
 @media (max-width: 720px) {
   .res { grid-template-columns: repeat(3, auto); gap: 4px; }
   .chip { min-width: 0; padding: 3px 8px 3px 4px; }
@@ -129,12 +198,11 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
   .chip b { font-size: 16px; }
   img.ic { width: 18px; height: 18px; }
   .top { top: auto; bottom: 12px; width: calc(100% - var(--gutter-l) - var(--gutter-r)); left: var(--gutter-l); transform: none; }
-  .side { top: auto; bottom: 70px; grid-auto-flow: column; align-items: center; }
-  .side .btn { width: auto; padding: 6px 8px; }
+  .side .btn { padding: 6px 8px; }
   .side .btn span.lbl { display: none; }
-  .tile { top: 86px; right: var(--gutter-r); width: auto; }
+  .tile { top: 130px; right: var(--gutter-r); width: auto; }
   .feed { display: none; }
-  .notes { top: auto; bottom: 118px; left: var(--gutter-l); right: var(--gutter-r); width: auto; transform: none; }
+  .notes { top: auto; bottom: 180px; left: var(--gutter-l); right: var(--gutter-r); width: auto; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .node.ready { animation: none; } }
 </style>
@@ -145,7 +213,7 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 <div class="hud" id="hud">
   <div class="res" id="res"></div>
   <div class="top">
-    <div class="panel season"><div class="row"><b id="season">Spring</b><span id="year">Year 1</span></div><div class="bar" aria-hidden="true"><i id="seasonBar"></i></div></div>
+    <div class="panel season"><div class="row"><b id="season">Spring</b><span id="year">Year 1</span></div><div class="ribbon" aria-hidden="true"><div id="ribbon"></div><i id="nowMark"></i></div></div>
   </div>
   <div class="notes" id="notes" aria-live="polite"></div>
   <div class="side">
@@ -153,18 +221,33 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
     <button class="btn go" id="treeBtn" aria-label="Tech tree"><img class="ic" alt="" data-ic="tree"><span class="lbl">Tech</span></button>
     <button class="btn" id="hire" aria-label="Hire a worker"><img class="ic" alt="" data-ic="hire"><span class="lbl">Hire</span> <span class="cost" id="hireCost"></span></button>
     <div class="speed" role="group" aria-label="Game speed">
+      <button class="btn" data-speed="0" aria-label="Pause">❚❚</button>
       <button class="btn" data-speed="1" aria-pressed="true">1×</button>
       <button class="btn" data-speed="2">2×</button>
       <button class="btn" data-speed="4">4×</button>
     </div>
+    <div class="lenses" role="group" aria-label="Map lenses">
+      <button class="btn" data-lens="soil" aria-pressed="false">Soil</button>
+      <button class="btn" data-lens="food" aria-pressed="false">Food</button>
+      <button class="btn" data-lens="water" aria-pressed="false">Water</button>
+    </div>
+    <div class="crews" id="crews"></div>
   </div>
   <div class="panel tile" id="tilePanel" hidden>
       <div class="th"><b id="tName"></b><button class="x" id="tClose" aria-label="Close">✕</button></div>
       <p id="tInfo"></p>
-      <div class="slots" id="tSlots"></div>
-      <div class="tacts" id="tActs"><button class="btn no" id="tMinus">− Remove</button><button class="btn go" id="tPlus">+ Assign worker</button></div>
+      <div class="vals" id="tVals"></div>
+      <div class="plans" id="tPlans"></div>
+      <div class="steps" id="tSteps"></div>
       <button class="btn go" id="tBuy" hidden></button>
-      <div class="tacts" id="tDock" hidden><button class="btn" id="sellLogs"></button><button class="btn" id="sellFood"></button></div>
+      <div class="dock" id="tDock" hidden>
+        <p id="dockBoat"></p>
+        <div class="keep"><span>Keep logs</span><button class="btn mini" data-keep="logs:-5">−</button><b id="keepLogs"></b><button class="btn mini" data-keep="logs:5">+</button></div>
+        <div class="keep"><span>Keep food</span><button class="btn mini" data-keep="food:-5">−</button><b id="keepFood"></b><button class="btn mini" data-keep="food:5">+</button></div>
+        <button class="btn go" id="sellSurplus"></button>
+        <div class="buyrow"><button class="btn" id="buyLogs"></button><button class="btn" id="buyFood"></button></div>
+        <p class="note" id="dockStock"></p>
+      </div>
       <p class="note" id="tNote"></p>
     </div>
   <div class="bottom">

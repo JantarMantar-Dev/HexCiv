@@ -44,3 +44,9 @@ The bright-tile engine with the strategy style removed, plus PNG export, CI art 
 The first playable game on the clean Verdant Reach map: worker assignment, upkeep, seasons, contracts and the tech
 tree. Frozen as version 1 when the design moved to a ruined valley, where the map and art have to show the damage
 and the healing on their own.
+
+## 7. Prototype v2 (`archive/6-prototype-v2`)
+
+The first ruined valley: faded, still ruin tiles drawn from the bright tiles by recolouring and hand-placed details
+(stumps, fallen trunks, cracks, the dam, the mine), a rot overlay, an owned-land border, and colour coming back as
+tiles heal.

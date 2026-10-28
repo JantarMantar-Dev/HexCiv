@@ -99,6 +99,38 @@ The yearly puzzle is to stock enough food and gold before winter to keep every w
 - Too much clearing near the river dries the soil, and desert spreads. This is a late-game pressure, not part of the
   first prototype.
 
+## Prototype version 3: Healing the Land
+
+`play.html` now plays the staged healing and management design from the "Healing the Land" doc. v2 is frozen in
+`archive/6-prototype-v2`.
+
+- **Tile values.** Every land tile has soil (Hard, Firm, Loose), food (Dead, Poor, Fed, Rich), water (Dry, Damp, Wet)
+  and a cover (bare, seedlings, young wood, pines, forest, grove, clover, grass, meadow). The art shows them: cracks on
+  hard soil, furrows on loose soil, mulch spots once the soil is fed, yellowing leaves when a tile dries out.
+- **Plans, not postings.** The player gives a tile a plan (Forest, Field, Rest; Heal marsh and Clean river on water
+  tiles) and a priority. The tile panel shows the plan's steps as chips; the current one is outlined, and a stuck tile
+  says why: wrong season, missing tech, no stock at the dock, or no one in the crew. Drag from a planned tile to paint
+  the same plan.
+- **Crews.** Workers join one of four crews: land, water carriers, woodcutters, fishers and farmers. Each crew picks its
+  own work by priority and distance. Water carriers help the land crew outside summer; the land crew cuts firewood in
+  winter. Workers get a star of skill for every 150 seconds in a crew, up to three.
+- **Seasons gate the steps.** Planting and sowing happen in spring and autumn, nothing grows in winter, and summer dries
+  the land one level every 45 seconds. Plants left dry for 40 seconds die, so a forest plan needs water carriers.
+  Seedlings take 450 growing seconds to become young wood and 900 more to become a pine stand of 20 logs.
+- **Forests last, and run out.** Old forest holds 120 logs, pines 60, a grove 50, and a deadwood field 30. Woodcutters
+  can be told to cut to the last log, leave a third, or take only deadwood. Wood near the dock runs out in a few years
+  unless the player buys more land or plants.
+- **The dock.** Keep lines for logs and food: the dock sells everything above them when the trader's boat is in (the
+  first 60 seconds of spring, summer and autumn). The boat also sells logs (5g) and food (4g). With the Trade post, the
+  dock sells surplus and buys back up to the keep lines on its own. In autumn a notice warns when the woodpile is short
+  of what winter will burn.
+- **Rot.** The land crew burns rot in spring, summer and autumn. Workers walk around rot where they can, a burning fire
+  halves the sickness, and the dock's hearth keeps the crew safe at home.
+- **Tech tree.** 21 upgrades in six branches: Soil, Water, Plants, Forest, Clean-up, Food and trade. Dam breaking,
+  Quarrying and Mine sealing are shown as coming later.
+- **Lenses and the ribbon.** Soil, Food and Water lenses tint the map by that value. The season ribbon shows what each
+  season allows, with a marker for now. Space pauses.
+
 ## Prototype version 2: Restore the Valley
 
 `play.html` now plays the ruined Verdant Reach. The valley starts grey: stump fields, deadwood, dust fields, a dirty
