@@ -426,8 +426,9 @@
   const cutOf = (t) => { const c = S.camps.find((k) => k.type === 'wood' && inRange(k, t)); return c ? c.cut : 'last'; };
   const cutLimit = (t) => { const k = cutOf(t); return k === 'third' ? Math.ceil(WOOD[t.cover] / 3) : k === 'dead' ? Infinity : 0; };
   // What this worker should do next: the highest-priority task their crew can do now, nearest first.
-  function pickTask(w, D) {
-    const home = homeOf(w), seen = cells.filter((t) => t.own && t.seen && D.cost.has(t) && inRange(home, t));
+  // Work in the home camp's range first; with nothing there, walk out to anything else of theirs in the valley.
+  function pickTask(w, D, wide) {
+    const home = homeOf(w), seen = cells.filter((t) => t.own && t.seen && D.cost.has(t) && (wide || inRange(home, t)));
     const d = (t) => D.cost.get(t), out = [];
     for (const role of rolesOf(w)) {
       if (role === 'land') {
@@ -469,7 +470,7 @@
     const D = dijkstra(w.at), home = campTile(homeOf(w));
     if (w.carry && w.carry.kind !== 'water') return go(w, D, home, 'deliver'); // every camp's store is the valley's store
     if (w.carry && w.carry.kind === 'water' && w.task) return go(w, D, w.task, 'pour');
-    const pick = pickTask(w, D);
+    const pick = pickTask(w, D) || pickTask(w, D, true);
     if (pick) {
       w.task = pick.t; w.taskJob = pick.job; w.taskRole = pick.role;
       if (pick.job === 'water') { // fetch water from the nearest clean source first
@@ -1159,7 +1160,7 @@
     'Beach': 'Fishers catch fish here, all year round. Water carriers fill buckets here.',
     'Pond': 'Fishers catch fish here, except in winter. Water carriers fill buckets here.',
   };
-  const STALL_TEXT = { season: 'Waiting for the right season.', tech: 'Locked: needs an upgrade from the tech tree.', stock: 'Waiting for stock at the dock.', hands: 'No camp works this hex. Build a Gardener\'s hut nearby, or hire at the dock.' };
+  const STALL_TEXT = { season: 'Waiting for the right season.', tech: 'Locked: needs an upgrade from the tech tree.', stock: 'Waiting for stock at the dock.', hands: 'No camp is close to this hex. Idle hands walk out to it, but a Gardener\'s tent nearby works it much faster.' };
   const PLAN_ICON = { forest: 'forestry', field: 'farms', rest: 'snow', marsh: 'drop', river: 'reeds' };
   const CUT_TEXT = { last: 'Cut to the last log', third: 'Leave a third', dead: 'Deadwood only' };
   let ringOpen = true, ringMenu = 'main', placing = null; // the action bar for the selected hex
@@ -1256,7 +1257,7 @@
       const mourn = S.graves.filter((g) => g.season === S.seasonCount && g.camp === cp.id);
       $('tCamp').innerHTML = `<p class="beds">${'▮'.repeat(ps.length)}${'▯'.repeat(Math.max(0, beds(cp) - ps.length))} <b>${ps.length} of ${beds(cp)} beds</b> · level ${cp.level}${cp.type === 'dock' ? ` · +${DOCK_YIELD[cp.level - 1]}g/min` : ''}</p>`
         + `<p class="who">${ps.map((w) => `<span class="${w.hungry || w.cold || w.sick > SICKEN / 4 ? 'hurt' : ''}">${w.name}${'★'.repeat(skill(w, rolesOf(w)[0]))}</span>`).join(' ') || '<span class="empty">No one lives here yet.</span>'}${mourn.map((g) => ` <span class="gone">${g.name}</span>`).join('')}</p>`
-        + (ps.some((w) => w.task) ? `<p class="doing">${doing(cp)}</p>` : '')
+        + (ps.some((w) => w.task) ? `<p class="doing">${doing(cp)}</p>` : ps.length && !ps.some((w) => w.carry || w.path.length) ? `<p class="doing idle">${idleWhy(cp)}</p>` : '')
         + (n ? `<p class="next">Grows when ${n.have >= n.want ? '✓' : `${n.have}/${n.want}`} living ${cp.type === 'dock' ? 'hexes in the valley' : 'hexes in range'} · ${costText(n)}</p>` : '');
     }
     const ch = t.plan && !cp ? chips(t) : [];
@@ -1320,6 +1321,14 @@
     const t = working[0].task, j = working[0].taskJob;
     const verb = { clear: 'Clearing', fell: 'Felling', water: 'Watering', fish: 'Fishing', farm: 'Farming', seed: 'Gathering seed on', loosen: 'Loosening', mulch: 'Mulching', compost: 'Composting', plant: 'Planting', sow: 'Sowing', pull: 'Pulling stumps on', burn: 'Burning', block: 'Blocking ditches on', reedbed: 'Building a reed bed on' }[j] || 'Working';
     return `${verb} the ${lower(nameOf(t))}${working.length > 1 && working.some((w) => w.task !== t) ? ' and more' : ''}`;
+  }
+  // Why a camp's people are sitting at home, and what would get them out.
+  function idleWhy(c) {
+    const hint = { wood: 'there is no deadwood or forest to cut in the valley', pier: winter() ? 'the ponds are frozen and the sea is too rough' : 'there is no fishing water near enough',
+      well: 'every plant has water', garden: 'no land of yours has a plan with a step they can do now', nursery: 'no land of yours has a plan with a step they can do now',
+      watch: 'no land of yours has a plan with a step they can do now', dock: 'there is nothing they can do right now' }[c.type];
+    const fix = { wood: 'Buy land with dead trees or forest.', pier: '', well: '', dock: 'Buy land next to your border and give it a plan.' }[c.type] ?? 'Buy land next to your border, give it a plan (field, meadow or forest), or unlock the next step in the tech tree.';
+    return `Resting at home: ${hint}.${winter() && c.type !== 'pier' ? ' Most work waits for spring.' : ''} ${fix}`.trim();
   }
   let speed = 1, view = 'menu';
   const running = () => view === 'game';
