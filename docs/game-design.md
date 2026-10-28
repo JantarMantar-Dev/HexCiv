@@ -99,7 +99,11 @@ The yearly puzzle is to stock enough food and gold before winter to keep every w
 - Too much clearing near the river dries the soil, and desert spreads. This is a late-game pressure, not part of the
   first prototype.
 
-## First prototype
+## First prototype (version 1)
+
+Frozen in `archive/5-prototype-v1/`. The design has since moved to *Restore the Valley*: the valley starts ruined,
+there is no goal text, the run ends when the crew dies, and gold buys land. Version 2 gets a new ruined map.
+
 
 The Verdant Reach map with fog, played full screen with a game HUD: resources on the left, menu, tech tree and hiring
 on the right, and a main menu that resumes a saved game. Tap a tile to open its panel and assign lumberjacks or

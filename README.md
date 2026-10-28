@@ -13,6 +13,7 @@ No build step and no dependencies beyond Node (for the tools).
 | Do this | Command |
 |---|---|
 | Play the prototype | Open `play.html` in a browser |
+| Play prototype v1 (frozen) | Open `archive/5-prototype-v1/play.html` |
 | View the map, tile set and checks | Open `index.html` in a browser |
 | Run the art checks (also runs in CI) | `node tools/check.js` |
 | Re-export the PNGs after changing art | `node tools/export.js` |
@@ -36,6 +37,7 @@ docs/art-style.md       The style guide: grid, palette, light, outlines, sprites
 docs/game-design.md     The game concept and what each terrain is for
 docs/art-history.md     How the style was found, step by step
 archive/                Earlier explorations, kept runnable (see docs/art-history.md)
+archive/5-prototype-v1/ Prototype v1 frozen: the clean Verdant Reach map and its game
 ```
 
 ## The tile set
