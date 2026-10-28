@@ -99,6 +99,35 @@ The yearly puzzle is to stock enough food and gold before winter to keep every w
 - Too much clearing near the river dries the soil, and desert spreads. This is a late-game pressure, not part of the
   first prototype.
 
+## Prototype version 4: Playing on the Hex
+
+`play.html` moves every decision back onto the map, following the "Playing on the Hex" doc. v3 is frozen in
+`archive/7-prototype-v3`; its soil, food and water simulation, seasons, rot and the dock carry over.
+
+- **Tap a hex, act on it.** Selecting a hex opens an action bar with only what fits that hex now: Buy, a plan
+  (Forest, Field, Rest), Build a camp, a priority. On a camp: Hire, Move in, Grow, and the woodcutters' cutting rule.
+- **Tap again to lend a hand.** A second tap on the selected hex speeds up its current step by 3 work-seconds, or
+  pulls a log out of deadwood or forest, waters a thirsty plant, or catches a fish every few taps. Work gloves double it.
+- **Camps hold the people.** The dock is home; a Woodcutter's tent, Gardener's tent, Fishing jetty, Well, Seed bed
+  (with Nursery) and Fire watch (with Ditch blocking) are built on hexes you own. Each works the hexes in its range
+  (1 or 2) and has beds; hiring needs a free bed. The global crew panel is gone.
+- **Camps grow with the land.** Tent, hut, house: each level needs living hexes in range plus gold and logs, and
+  brings more beds; a house reaches one hex further. The dock grows into a hamlet (8 living hexes in the valley) and a
+  village (20), with more beds, more trade income and warmer houses.
+- **One hearth per camp.** In winter each camp with people burns a log every 30 seconds (longer in bigger houses);
+  everyone who sleeps there stays warm while it burns.
+- **Gold from living land.** Every living hex you own earns gold each minute (grass 3, meadow 5, pines 4, old forest
+  6, water 2 to 4; half for land not yet fully alive), plus the dock's trade (10, 20, 35). Winter halves it. Between
+  boats the market stall sells one unit of surplus every 6 seconds at a lower price. The boat also sells seed.
+- **Needs you.** One button cycles through what is waiting on you: camps that can grow, empty camps, stuck plans,
+  unattended rot, the boat in with surplus to sell.
+- **On the map.** The next hex the rot will take blinks harder as the season runs out; thirsty plants show a drop;
+  hexes hiding a find glint under the fog (a seed chest, coins, a survivor, old tools, a cart of logs).
+- **Learning by doing.** Eight upgrades cost half their gold once you have done the work: burning rot, planting,
+  cutting logs, fishing, mulching, gathering seed, watering, loosening.
+- **The valley answers.** Healthy forests seed a bare neighbour each spring; at 10, 25, 40, 60 and 80% of the valley
+  alive, birds, deer, bees and a new family come back.
+
 ## Prototype version 3: Healing the Land
 
 `play.html` now plays the staged healing and management design from the "Healing the Land" doc. v2 is frozen in

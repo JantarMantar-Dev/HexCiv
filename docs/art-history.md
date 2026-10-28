@@ -50,3 +50,8 @@ and the healing on their own.
 The first ruined valley: faded, still ruin tiles drawn from the bright tiles by recolouring and hand-placed details
 (stumps, fallen trunks, cracks, the dam, the mine), a rot overlay, an owned-land border, and colour coming back as
 tiles heal.
+
+## 8. Prototype v3 (`archive/7-prototype-v3`)
+
+Tile values drawn on the map (cracks, furrows, mulch, dry leaves), plan flags and stall markers, lenses, the
+woodpile at the dock and the trader's boat. Frozen when play moved back onto the hexes with camps in version 4.

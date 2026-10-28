@@ -176,18 +176,36 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 .node span { font-size: 11px; bottom: -18px; }
 .branch { position: absolute; top: 0; transform: translateX(-50%); font-family: var(--display); font-size: 11px; color: var(--muted); white-space: nowrap; padding-top: 2px; }
 .tree { width: min(760px, 100%); }
+/* ---- v4: the action ring and camps ---- */
+.hud:has(.ring:not([hidden])) .bottom { display: none; }
+.ring { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 4; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100% - 24px); }
+.rv { display: grid; justify-items: center; gap: 2px; min-width: 64px; max-width: 110px; padding: 5px 7px 4px; cursor: pointer;
+  font-family: var(--display); font-size: 12.5px; line-height: 1.1; color: var(--cream); text-align: center;
+  background: var(--wood); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--wood-hi), inset -2px -2px 0 var(--wood-lo), 0 3px 0 rgba(20, 29, 38, .45); }
+.rv img { width: 24px; height: 24px; image-rendering: pixelated; }
+.rv em { font-style: normal; color: var(--gold); display: block; }
+.rv.on { background: var(--leaf); box-shadow: inset 2px 2px 0 var(--leaf-hi), inset -2px -2px 0 var(--leaf-lo), 0 3px 0 rgba(20, 29, 38, .45); }
+.rv[aria-disabled="true"] { filter: grayscale(.7) brightness(.7); cursor: not-allowed; }
+.rv:not([aria-disabled="true"]):hover { outline: 2px solid var(--lime); }
+.campinfo { display: grid; gap: 4px; font-size: 13px; }
+.campinfo p { margin: 0; line-height: 1.35; }
+.campinfo .beds { color: var(--lime); letter-spacing: 1px; }
+.campinfo .beds b { color: var(--cream); letter-spacing: 0; font-weight: 600; }
+.campinfo .who .hurt { color: var(--rose-hi); }
+.campinfo .who .gone { color: var(--muted); text-decoration: line-through; }
+.campinfo .who .empty, .campinfo .doing, .campinfo .next { color: var(--muted); }
+#needBtn.go { animation: pulse 1.4s steps(2) infinite; }
 @media (max-width: 720px) {
   .side { top: 84px; bottom: auto; left: var(--gutter-l); right: var(--gutter-r); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; grid-auto-flow: unset; }
   .side .btn { width: auto; }
-  .lenses { position: fixed; left: var(--gutter-l); bottom: 136px; }
-  .crews { position: fixed; left: var(--gutter-l); right: var(--gutter-r); bottom: 84px; width: auto; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-  .crew { padding: 3px 4px; border-left-width: 3px; }
-  .crew .ch { gap: 3px; }
-  .crew .ch .n { min-width: 0; }
-  .crew .who, .crew .doing, .crew .cut, .crew .ch b { display: none; }
-  .crew .btn.mini { padding: 1px 5px; font-size: 12px; }
+  .lenses { position: fixed; left: var(--gutter-l); bottom: 84px; }
+  .ring { bottom: 84px; }
+  .hud:has(.ring:not([hidden])) .lenses { display: none; }
+  .tile { max-height: 150px; overflow-y: auto; padding: 8px 10px; gap: 6px; }
+  .tile .th b { font-size: 17px; }
+  .rv { min-width: 56px; font-size: 11.5px; padding: 4px 5px 3px; }
   .tile { top: 130px; }
-  .notes { bottom: 180px; }
+  .notes { bottom: 130px; }
   .node span { font-size: 9px; }
   .branch { font-size: 8px; }
 }
@@ -202,13 +220,13 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
   .side .btn span.lbl { display: none; }
   .tile { top: 130px; right: var(--gutter-r); width: auto; }
   .feed { display: none; }
-  .notes { top: auto; bottom: 180px; left: var(--gutter-l); right: var(--gutter-r); width: auto; transform: none; }
+  .notes { top: auto; bottom: 152px; left: var(--gutter-l); right: var(--gutter-r); width: auto; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .node.ready { animation: none; } }
 </style>
 </head>
 <body>
-<canvas id="map" aria-label="The ruined Verdant Reach. Tap a tile to see it, buy it or put workers on it."></canvas>
+<canvas id="map" aria-label="The ruined Verdant Reach. Tap a hex for its actions; tap it again to lend a hand."></canvas>
 
 <div class="hud" id="hud">
   <div class="res" id="res"></div>
@@ -219,7 +237,7 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
   <div class="side">
     <button class="btn" id="menuBtn" aria-label="Menu">◀ <span class="lbl">Menu</span></button>
     <button class="btn go" id="treeBtn" aria-label="Tech tree"><img class="ic" alt="" data-ic="tree"><span class="lbl">Tech</span></button>
-    <button class="btn" id="hire" aria-label="Hire a worker"><img class="ic" alt="" data-ic="hire"><span class="lbl">Hire</span> <span class="cost" id="hireCost"></span></button>
+    <button class="btn" id="needBtn" aria-label="Go to what needs you"><img class="ic" alt="" data-ic="pop"><span class="lbl">All quiet</span></button>
     <div class="speed" role="group" aria-label="Game speed">
       <button class="btn" data-speed="0" aria-label="Pause">❚❚</button>
       <button class="btn" data-speed="1" aria-pressed="true">1×</button>
@@ -231,25 +249,24 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
       <button class="btn" data-lens="food" aria-pressed="false">Food</button>
       <button class="btn" data-lens="water" aria-pressed="false">Water</button>
     </div>
-    <div class="crews" id="crews"></div>
   </div>
   <div class="panel tile" id="tilePanel" hidden>
       <div class="th"><b id="tName"></b><button class="x" id="tClose" aria-label="Close">✕</button></div>
       <p id="tInfo"></p>
       <div class="vals" id="tVals"></div>
-      <div class="plans" id="tPlans"></div>
+      <div class="campinfo" id="tCamp" hidden></div>
       <div class="steps" id="tSteps"></div>
-      <button class="btn go" id="tBuy" hidden></button>
       <div class="dock" id="tDock" hidden>
         <p id="dockBoat"></p>
         <div class="keep"><span>Keep logs</span><button class="btn mini" data-keep="logs:-5">−</button><b id="keepLogs"></b><button class="btn mini" data-keep="logs:5">+</button></div>
         <div class="keep"><span>Keep food</span><button class="btn mini" data-keep="food:-5">−</button><b id="keepFood"></b><button class="btn mini" data-keep="food:5">+</button></div>
         <button class="btn go" id="sellSurplus"></button>
-        <div class="buyrow"><button class="btn" id="buyLogs"></button><button class="btn" id="buyFood"></button></div>
+        <div class="buyrow"><button class="btn" id="buyLogs"></button><button class="btn" id="buyFood"></button><button class="btn" id="buySeed"></button></div>
         <p class="note" id="dockStock"></p>
       </div>
       <p class="note" id="tNote"></p>
     </div>
+  <div class="ring" id="ring" hidden></div>
   <div class="bottom">
     <ul class="feed" id="log"></ul>
   </div>
