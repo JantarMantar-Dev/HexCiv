@@ -13,6 +13,7 @@ No build step and no dependencies beyond Node (for the tools).
 | Do this | Command |
 |---|---|
 | Play the prototype | Open `play.html` in a browser |
+| Play prototype v4 (frozen) | Open `archive/8-prototype-v4/play.html` |
 | Play prototype v3 (frozen) | Open `archive/7-prototype-v3/play.html` |
 | Play prototype v2 (frozen) | Open `archive/6-prototype-v2/play.html` |
 | Play prototype v1 (frozen) | Open `archive/5-prototype-v1/play.html` |
@@ -42,6 +43,7 @@ archive/                Earlier explorations, kept runnable (see docs/art-histor
 archive/5-prototype-v1/ Prototype v1 frozen: the clean Verdant Reach map and its game
 archive/6-prototype-v2/ Prototype v2 frozen: Restore the Valley, workers posted on tiles by hand
 archive/7-prototype-v3/ Prototype v3 frozen: Healing the Land, with plans and global crews in a side panel
+archive/8-prototype-v4/ Prototype v4 frozen: Playing on the Hex, with camps that house trades
 ```
 
 ## The tile set

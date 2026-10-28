@@ -261,7 +261,7 @@
   }
 
   // ---------- save ----------
-  const SAVE = 'hexciv-v4-save';
+  const SAVE = 'hexciv-v5-save';
   const CELL_KEYS = ['rot', 'own', 'plan', 'prio', 'work', 'grow', 'age', 'dry', 'wilt', 'regrow', 'held', 'stumpAge', 'tire', 'soil', 'food', 'water', 'cover', 'dead', 'stumps', 'wood', 'river', 'marsh'];
   const idx = (t) => (t ? cells.indexOf(t) : -1);
   function save() {

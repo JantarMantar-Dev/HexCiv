@@ -55,3 +55,9 @@ tiles heal.
 
 Tile values drawn on the map (cracks, furrows, mulch, dry leaves), plan flags and stall markers, lenses, the
 woodpile at the dock and the trader's boat. Frozen when play moved back onto the hexes with camps in version 4.
+
+## 9. Prototype v4 (`archive/8-prototype-v4`)
+
+Camps drawn on their hexes as tents, huts and houses that grow with the land, flags and level pips, range highlights,
+the action bar, a blinking next-rot hex, glints on finds and drop icons on thirsty plants. Frozen when version 5
+removed trades and began to unfold the valley in chapters.
