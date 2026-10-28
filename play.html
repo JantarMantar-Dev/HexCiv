@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>HexCiv Prototype</title>
+<title>HexCiv: Restore the Valley</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&display=swap">
 <style>
-/* Layout: the map fills the screen. Resources run down the left, actions down the right, the season and contract sit
-   top centre, hints at the bottom. Menu and tech tree are full-screen overlays; buying an upgrade is a popup.
+/* Layout: the map fills the screen. Resources run down the left, actions down the right, the season sits top centre with
+   notices under it, the event feed at the bottom. There is no goal text: the map shows what is happening.
+   Menu, tech tree and the end of a run are full-screen overlays; buying an upgrade is a popup.
    Panels are drawn like the tiles: an ink outline, a light bevel on the upper-left and a shade on the lower-right. */
 :root {
   color-scheme: dark;
@@ -50,17 +51,15 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 .season span { color: var(--muted); font-size: 13px; }
 .bar { height: 6px; background: var(--deep0); border: 1px solid var(--ink); position: relative; overflow: hidden; }
 .bar i { position: absolute; inset: 0 auto 0 0; }
-.contract { padding: 6px 10px; display: grid; gap: 4px; font-size: 13px; }
-.contract .row { display: flex; justify-content: space-between; gap: 8px; font-family: var(--display); font-size: 15px; }
-.contract .row .late { color: var(--rose-hi); }
-.contract p { margin: 0; color: var(--muted); }
+.notes { position: absolute; left: 50%; top: 76px; transform: translateX(-50%); width: min(340px, calc(100% - 300px)); display: grid; gap: 6px; pointer-events: none; }
+.notice { padding: 6px 10px; font-size: 13.5px; line-height: 1.35; }
+.notice.bad { background: #3a1d26; box-shadow: inset 2px 2px 0 var(--rose-lo), inset -2px -2px 0 #22121a, 0 3px 0 rgba(20, 29, 38, .45); color: #ffd9de; }
 .side { position: absolute; right: var(--gutter-r); top: 12px; display: grid; gap: 8px; justify-items: end; }
 .side .btn { width: 100%; justify-content: flex-start; }
 .speed { display: flex; gap: 4px; }
 .speed .btn { padding: 4px 8px; font-size: 14px; width: auto; }
 .speed .btn[aria-pressed="true"] { background: var(--leaf); box-shadow: inset 2px 2px 0 var(--leaf-hi), inset -2px -2px 0 var(--leaf-lo); }
 .bottom { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); display: grid; gap: 6px; }
-.hint { padding: 8px 12px; font-size: 14px; line-height: 1.4; }
 .tile { position: absolute; left: var(--gutter-l); top: 280px; width: 300px; box-sizing: border-box; padding: 10px 12px; display: grid; gap: 8px; }
 .tile .th { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .tile .th b { font-family: var(--display); font-weight: 600; font-size: 20px; color: var(--lime); }
@@ -75,6 +74,8 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 .slot:not(.on) img { opacity: .25; }
 .tacts { display: flex; gap: 8px; flex-wrap: wrap; }
 .tacts .btn { flex: 1; justify-content: center; }
+.tile > .btn { justify-content: center; }
+#tDock { flex-direction: column; }
 .feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 12.5px; text-shadow: 0 1px 0 var(--ink); }
 .feed li { background: rgba(20, 29, 38, .6); padding: 2px 8px; justify-self: start; }
 .feed li:nth-child(2) { opacity: .75; } .feed li:nth-child(3) { opacity: .5; }
@@ -115,6 +116,11 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 .pop .need { color: var(--rose-hi); font-size: 13px; }
 .pop .acts { display: flex; gap: 10px; width: 100%; }
 .pop .acts .btn { flex: 1; justify-content: center; }
+.end { width: min(400px, 100%); box-sizing: border-box; padding: 26px 24px 22px; display: grid; gap: 12px; justify-items: center; text-align: center; }
+.end h2 { font-family: var(--display); font-weight: 600; font-size: 30px; margin: 0; color: var(--muted); }
+.end p { margin: 0; line-height: 1.45; }
+.end .why { font-size: 16px; color: #ffd9de; }
+.end .btn { width: 100%; justify-content: center; font-size: 18px; }
 
 @media (max-width: 720px) {
   .res { grid-template-columns: repeat(3, auto); gap: 4px; }
@@ -123,25 +129,25 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
   .chip b { font-size: 16px; }
   img.ic { width: 18px; height: 18px; }
   .top { top: auto; bottom: 12px; width: calc(100% - var(--gutter-l) - var(--gutter-r)); left: var(--gutter-l); transform: none; }
-  .side { top: auto; bottom: 146px; grid-auto-flow: column; align-items: center; }
+  .side { top: auto; bottom: 70px; grid-auto-flow: column; align-items: center; }
   .side .btn { width: auto; padding: 6px 8px; }
   .side .btn span.lbl { display: none; }
-  .bottom { bottom: auto; top: 86px; }
   .tile { top: 86px; right: var(--gutter-r); width: auto; }
   .feed { display: none; }
+  .notes { top: auto; bottom: 118px; left: var(--gutter-l); right: var(--gutter-r); width: auto; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .node.ready { animation: none; } }
 </style>
 </head>
 <body>
-<canvas id="map" aria-label="Verdant Reach map. Tap a tile to assign workers."></canvas>
+<canvas id="map" aria-label="The ruined Verdant Reach. Tap a tile to see it, buy it or put workers on it."></canvas>
 
 <div class="hud" id="hud">
   <div class="res" id="res"></div>
   <div class="top">
     <div class="panel season"><div class="row"><b id="season">Spring</b><span id="year">Year 1</span></div><div class="bar" aria-hidden="true"><i id="seasonBar"></i></div></div>
-    <div class="panel contract" id="contract"></div>
   </div>
+  <div class="notes" id="notes" aria-live="polite"></div>
   <div class="side">
     <button class="btn" id="menuBtn" aria-label="Menu">◀ <span class="lbl">Menu</span></button>
     <button class="btn go" id="treeBtn" aria-label="Tech tree"><img class="ic" alt="" data-ic="tree"><span class="lbl">Tech</span></button>
@@ -157,11 +163,12 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
       <p id="tInfo"></p>
       <div class="slots" id="tSlots"></div>
       <div class="tacts" id="tActs"><button class="btn no" id="tMinus">− Remove</button><button class="btn go" id="tPlus">+ Assign worker</button></div>
+      <button class="btn go" id="tBuy" hidden></button>
+      <div class="tacts" id="tDock" hidden><button class="btn" id="sellLogs"></button><button class="btn" id="sellFood"></button></div>
       <p class="note" id="tNote"></p>
     </div>
   <div class="bottom">
     <ul class="feed" id="log"></ul>
-    <div class="panel hint" id="hint"></div>
   </div>
 </div>
 <div class="panel tip" id="tip"></div>
@@ -169,7 +176,7 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 <div class="overlay" id="menu">
   <div class="panel menu">
     <h1>HexCiv</h1>
-    <p>Chop, haul and trade your way through the seasons of Verdant Reach.</p>
+    <p>Restore the Valley</p>
     <button class="btn go" id="resume">Resume</button>
     <button class="btn" id="newGame">New game</button>
     <small id="saveNote"></small>
@@ -192,6 +199,15 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
     <div class="price" id="popPrice"></div>
     <p class="need" id="popNeed"></p>
     <div class="acts"><button class="btn no" id="popNo">Cancel</button><button class="btn go" id="popYes">Buy</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="endView" hidden>
+  <div class="panel end" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+    <h2 id="endTitle">The valley is quiet</h2>
+    <p class="why" id="endText"></p>
+    <p id="endStats"></p>
+    <button class="btn go" id="again">Start again</button>
   </div>
 </div>
 

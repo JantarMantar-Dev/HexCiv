@@ -24,8 +24,8 @@ No build step and no dependencies beyond Node (for the tools).
 index.html              Tile viewer: world map with hover tooltips, the tile set, the five-tile isle, the checks
 src/tiles.js            The tile engine: grid, palette, every sprite, every tile layout, maps, checks
 src/viewer.js           Viewer page logic
-play.html               Prototype 1: chop, hire, haul, upkeep, tech and seasons on the Verdant Reach map
-src/game.js             Prototype game logic and HUD
+play.html               Prototype v2, Restore the Valley: heal a ruined Verdant Reach and keep the crew alive
+src/game.js             Prototype game logic, the ruined map and its art, and the HUD
 src/icons.js            Pixel-art HUD and tech tree icons
 art/tiles/*.png         One PNG per terrain, 32x48 at 1x
 art/tilesheet.png/json  All terrains in one strip, with the order and cell metrics

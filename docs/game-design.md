@@ -99,6 +99,25 @@ The yearly puzzle is to stock enough food and gold before winter to keep every w
 - Too much clearing near the river dries the soil, and desert spreads. This is a late-game pressure, not part of the
   first prototype.
 
+## Prototype version 2: Restore the Valley
+
+`play.html` now plays the ruined Verdant Reach. The valley starts grey: stump fields, deadwood, dust fields, a dirty
+river behind an old dam, a dry riverbed, a drained marsh, and rot creeping down from a leaking mine. Only the dock
+and a few tiles around it are alive.
+
+- **No goal text.** The map shows what is wrong. Living tiles are in colour and move (glints, birds, smoke from the
+  hut); ruined tiles are faded and still. Notices only report what already happened.
+- **Land costs gold.** You own the dock and six hexes. Tap a hex next to your border to buy it; ruined land is
+  cheap and living land is dear. You see two hexes past your border.
+- **Workers can die** of hunger, cold (no logs in winter), rot sickness, or the spring flood around the marsh. Each
+  death leaves a grave and a notice saying who and why. The run ends when the last one dies.
+- **Jobs heal the land:** clear deadwood for logs, plant saplings, compost dust, burn rot, filter the river, fish and
+  farm. Cut a living forest to its last log and it turns to stumps.
+- **Rot** spreads one tile a season outside winter, from the mine through every rot tile still joined to it. A living
+  forest or a clean river holds it for a season.
+- **Tech:** Fishing nets, Axes, Saplings, Compost, Reed filters, Forestry and Farms. Dam breaking, Quarrying,
+  Re-wetting, Log rafting and Mine sealing are on the tree as coming later.
+
 ## First prototype (version 1)
 
 Frozen in `archive/5-prototype-v1/`. The design has since moved to *Restore the Valley*: the valley starts ruined,
