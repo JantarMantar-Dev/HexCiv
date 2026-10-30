@@ -61,3 +61,8 @@ woodpile at the dock and the trader's boat. Frozen when play moved back onto the
 Camps drawn on their hexes as tents, huts and houses that grow with the land, flags and level pips, range highlights,
 the action bar, a blinking next-rot hex, glints on finds and drop icons on thirsty plants. Frozen when version 5
 removed trades and began to unfold the valley in chapters.
+
+## 10. Prototype v5 (`archive/9-prototype-v5`)
+
+A chapter goal line and a glowing goal hex with a bobbing arrow, progress bars under hexes, twice-size stall
+markers and idle "z z" bubbles. Frozen when version 6 turned the game into a place-and-transform puzzle.

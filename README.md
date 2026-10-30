@@ -13,6 +13,7 @@ No build step and no dependencies beyond Node (for the tools).
 | Do this | Command |
 |---|---|
 | Play the prototype | Open `play.html` in a browser |
+| Play prototype v5 (frozen) | Open `archive/9-prototype-v5/play.html` |
 | Play prototype v4 (frozen) | Open `archive/8-prototype-v4/play.html` |
 | Play prototype v3 (frozen) | Open `archive/7-prototype-v3/play.html` |
 | Play prototype v2 (frozen) | Open `archive/6-prototype-v2/play.html` |
@@ -27,7 +28,7 @@ No build step and no dependencies beyond Node (for the tools).
 index.html              Tile viewer: world map with hover tooltips, the tile set, the five-tile isle, the checks
 src/tiles.js            The tile engine: grid, palette, every sprite, every tile layout, maps, checks
 src/viewer.js           Viewer page logic
-play.html               Prototype v5, the valley unfolds: one crew, five chapters with a glowing goal hex, fix-it buttons, visible progress
+play.html               Prototype v6, Regrow: a place-and-transform puzzle, restorers green the hexes around them
 src/game.js             Prototype game logic, the ruined map and its art, and the HUD
 src/icons.js            Pixel-art HUD and tech tree icons
 art/tiles/*.png         One PNG per terrain, 32x48 at 1x
@@ -44,6 +45,7 @@ archive/5-prototype-v1/ Prototype v1 frozen: the clean Verdant Reach map and its
 archive/6-prototype-v2/ Prototype v2 frozen: Restore the Valley, workers posted on tiles by hand
 archive/7-prototype-v3/ Prototype v3 frozen: Healing the Land, with plans and global crews in a side panel
 archive/8-prototype-v4/ Prototype v4 frozen: Playing on the Hex, with camps that house trades
+archive/9-prototype-v5/ Prototype v5 frozen: The Valley Unfolds, one crew, chapters and fix-it buttons
 ```
 
 ## The tile set
