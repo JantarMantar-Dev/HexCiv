@@ -104,9 +104,10 @@ The yearly puzzle is to stock enough food and gold before winter to keep every w
 `play.html` follows the "Making the Valley Unfold" doc: every question a player had to ask in v4 now has an answer on
 screen. v4 is frozen in `archive/8-prototype-v4`; the land simulation, seasons, rot, camps and the action bar carry over.
 
-- **One crew.** Trades are gone. Every worker takes the most needed job on your land, nearest first: rot, then deadwood,
-  then plan steps by priority, felling when the woodpile (or a waiting plan) needs logs, fishing when food runs low,
-  watering in summer, seed in autumn. Workers go back to whatever matters most after each catch or log.
+- **One crew that waits for your word.** Trades are gone. The crew works only where you have asked: hexes with a plan,
+  deadwood you marked with Clear, forests you marked with Fell (down to a third, then the order lifts). On its own it
+  only burns rot on your land, fishes when food runs low (or near a jetty you built), waters planted hexes in summer and
+  gathers seed in autumn. Left alone, the crew sits idle and "Needs you" says why.
 - **Camps speed work up, they don't gate it.** A camp houses people and makes one kind of work twice as fast within
   its range: woodcutter's tent (clearing, felling), gardener's tent (land work), jetty (fishing, farming), well
   (watering), fire watch (burning rot). The Seed bed raises saplings; the dock is home and the store.
