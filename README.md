@@ -12,6 +12,12 @@ No build step and no dependencies beyond Node (for the tools).
 
 | Do this | Command |
 |---|---|
+| Play the prototype | Open `play.html` in a browser |
+| Play prototype v5 (frozen) | Open `archive/9-prototype-v5/play.html` |
+| Play prototype v4 (frozen) | Open `archive/8-prototype-v4/play.html` |
+| Play prototype v3 (frozen) | Open `archive/7-prototype-v3/play.html` |
+| Play prototype v2 (frozen) | Open `archive/6-prototype-v2/play.html` |
+| Play prototype v1 (frozen) | Open `archive/5-prototype-v1/play.html` |
 | View the map, tile set and checks | Open `index.html` in a browser |
 | Run the art checks (also runs in CI) | `node tools/check.js` |
 | Re-export the PNGs after changing art | `node tools/export.js` |
@@ -22,6 +28,9 @@ No build step and no dependencies beyond Node (for the tools).
 index.html              Tile viewer: world map with hover tooltips, the tile set, the five-tile isle, the checks
 src/tiles.js            The tile engine: grid, palette, every sprite, every tile layout, maps, checks
 src/viewer.js           Viewer page logic
+play.html               Prototype v6, Regrow: a place-and-transform puzzle, restorers green the hexes around them
+src/game.js             Prototype game logic, the ruined map and its art, and the HUD
+src/icons.js            Pixel-art HUD and tech tree icons
 art/tiles/*.png         One PNG per terrain, 32x48 at 1x
 art/tilesheet.png/json  All terrains in one strip, with the order and cell metrics
 art/maps/*.png          The composed maps at 1x
@@ -32,6 +41,11 @@ docs/art-style.md       The style guide: grid, palette, light, outlines, sprites
 docs/game-design.md     The game concept and what each terrain is for
 docs/art-history.md     How the style was found, step by step
 archive/                Earlier explorations, kept runnable (see docs/art-history.md)
+archive/5-prototype-v1/ Prototype v1 frozen: the clean Verdant Reach map and its game
+archive/6-prototype-v2/ Prototype v2 frozen: Restore the Valley, workers posted on tiles by hand
+archive/7-prototype-v3/ Prototype v3 frozen: Healing the Land, with plans and global crews in a side panel
+archive/8-prototype-v4/ Prototype v4 frozen: Playing on the Hex, with camps that house trades
+archive/9-prototype-v5/ Prototype v5 frozen: The Valley Unfolds, one crew, chapters and fix-it buttons
 ```
 
 ## The tile set

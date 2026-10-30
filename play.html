@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HexCiv: Regrow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: the map fills the screen. Leaves and goals sit top left, menu and help top right, the restorers in a bar
+   along the bottom with a line about the chosen one. Panels are drawn like the tiles: an ink outline, a light bevel on
+   the upper-left and a shade on the lower-right. */
+:root {
+  color-scheme: dark;
+  --ink: #141d26; --deep: #1a3445; --deep2: #234559; --deep0: #0f2230; --sky: #a9d5f0;
+  --wood: #77513c; --wood-hi: #b57f52; --wood-lo: #3f2b31;
+  --leaf: #2f7d46; --leaf-hi: #9bcb3e; --leaf-lo: #23584c;
+  --rose: #c0473f; --rose-hi: #e8587d; --rose-lo: #6e2630;
+  --gold: #e6c35a; --cream: #f4f6ea; --muted: #a3b5c4; --lime: #c9e05a;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --gutter-l: max(12px, env(safe-area-inset-left, 0px)); --gutter-r: max(12px, env(safe-area-inset-right, 0px));
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--sky); color: var(--cream); font-family: var(--body); font-size: 14px; }
+body { padding-left: 0; padding-right: 0; }
+canvas#map { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; cursor: pointer; }
+img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; height: 24px; display: block; flex: none; }
+.panel { background: var(--deep); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--deep2), inset -2px -2px 0 var(--deep0), 0 3px 0 rgba(20, 29, 38, .45); }
+.btn { font-family: var(--display); font-size: 16px; color: var(--cream); background: var(--wood); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--wood-hi), inset -2px -2px 0 var(--wood-lo), 0 3px 0 rgba(20, 29, 38, .45); padding: 8px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 2px 2px 0 var(--wood-lo), inset -2px -2px 0 var(--wood-hi); }
+.btn.go { background: var(--leaf); box-shadow: inset 2px 2px 0 var(--leaf-hi), inset -2px -2px 0 var(--leaf-lo), 0 3px 0 rgba(20, 29, 38, .45); }
+.btn.no { background: var(--rose); box-shadow: inset 2px 2px 0 var(--rose-hi), inset -2px -2px 0 var(--rose-lo), 0 3px 0 rgba(20, 29, 38, .45); }
+.btn:disabled { filter: grayscale(.8) brightness(.75); cursor: not-allowed; }
+
+/* ---- HUD ---- */
+.hud { position: fixed; inset: 0; pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.score { position: absolute; left: var(--gutter-l); top: 12px; padding: 8px 12px; display: grid; gap: 6px; width: 270px; box-sizing: border-box; }
+.leaves { display: flex; align-items: baseline; gap: 8px; font-family: var(--display); }
+.leaves b { font-size: 30px; color: var(--lime); line-height: 1; }
+.leaves small { color: var(--muted); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+.goals { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 13px; }
+.goals li { color: var(--cream); }
+.goals li.ok { color: var(--leaf-hi); }
+.goals li.later { color: var(--muted); }
+.side { position: absolute; right: var(--gutter-r); top: 12px; display: grid; gap: 8px; justify-items: stretch; }
+.side .btn { justify-content: flex-start; }
+.msg { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); width: min(420px, calc(100% - 600px)); min-width: 240px; padding: 8px 12px; font-size: 14px; line-height: 1.35; pointer-events: none; }
+.stuck { position: absolute; left: 50%; top: 64px; transform: translateX(-50%); padding: 8px 12px; font-size: 14px; background: #3a1d26; color: #ffd9de; }
+.bottom { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); width: min(900px, calc(100% - 24px)); display: grid; gap: 6px; }
+.toolinfo { padding: 6px 10px; font-size: 13.5px; line-height: 1.35; min-height: 18px; }
+.toolinfo b { font-family: var(--display); font-weight: 600; color: var(--lime); margin-right: 4px; }
+.toolinfo .bad { color: var(--rose-hi); }
+.toolinfo .good { color: var(--leaf-hi); }
+.toolinfo .meh { color: var(--gold); }
+.tools { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.tool { position: relative; display: grid; justify-items: center; gap: 2px; min-width: 84px; padding: 6px 6px 5px; cursor: pointer; font: inherit; color: var(--cream);
+  background: var(--deep); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--deep2), inset -2px -2px 0 var(--deep0), 0 3px 0 rgba(20, 29, 38, .45); }
+.tool img { width: 36px; height: 39px; image-rendering: pixelated; }
+.tool span { font-family: var(--display); font-size: 13px; white-space: nowrap; }
+.tool em { font-style: normal; font-size: 12px; color: var(--gold); }
+.tool kbd { position: absolute; top: 2px; left: 4px; font-size: 10px; color: var(--muted); font-family: var(--display); }
+.tool[aria-pressed="true"] { background: var(--leaf); box-shadow: inset 2px 2px 0 var(--leaf-hi), inset -2px -2px 0 var(--leaf-lo), 0 3px 0 rgba(20, 29, 38, .45); }
+.tool.poor em { color: var(--rose-hi); }
+.tool:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.tip { position: fixed; pointer-events: none; padding: 6px 9px; font-size: 13px; line-height: 1.35; min-width: 140px; max-width: 260px; display: none; z-index: 5; }
+.tip b { font-family: var(--display); font-weight: 600; font-size: 16px; display: block; color: var(--lime); }
+.tip span { color: var(--muted); display: block; }
+.coord { font-family: inherit; font-weight: 400; font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+
+/* ---- overlays ---- */
+.overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px var(--gutter-r) 16px var(--gutter-l); background: rgba(15, 34, 48, .72); overflow-y: auto; }
+.menu { display: grid; gap: 12px; justify-items: center; text-align: center; padding: 28px 28px 24px; width: min(360px, 100%); box-sizing: border-box; }
+.menu h1 { font-family: var(--display); font-weight: 700; font-size: 56px; line-height: 1; margin: 0; color: var(--lime); text-shadow: 3px 3px 0 var(--ink); }
+.menu p { margin: 0 0 8px; color: var(--muted); }
+.menu .btn { width: 100%; justify-content: center; font-size: 20px; padding: 12px; }
+.menu small { color: var(--muted); }
+.help { width: min(520px, 100%); box-sizing: border-box; padding: 22px 24px; display: grid; gap: 10px; }
+.help h2 { font-family: var(--display); font-weight: 600; font-size: 26px; margin: 0; color: var(--lime); }
+.help p, .help li { margin: 0; line-height: 1.45; }
+.help ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.help .btn { justify-self: center; font-size: 18px; padding: 10px 28px; }
+.end { width: min(400px, 100%); box-sizing: border-box; padding: 26px 24px 22px; display: grid; gap: 12px; justify-items: center; text-align: center; }
+.end h2 { font-family: var(--display); font-weight: 600; font-size: 30px; margin: 0; color: var(--lime); }
+.end p { margin: 0; line-height: 1.45; }
+.end .btn { width: 100%; justify-content: center; font-size: 18px; }
+
+@media (max-width: 720px) {
+  .score { width: 200px; padding: 6px 8px; }
+  .goals { font-size: 11.5px; }
+  .msg { top: auto; bottom: 200px; width: calc(100% - 24px); min-width: 0; }
+  .stuck { top: auto; bottom: 250px; }
+  .side .lbl { display: none; }
+  .tool { min-width: 64px; padding: 4px; }
+  .tool span { font-size: 11px; }
+  .tool img { width: 28px; height: 30px; }
+  .toolinfo { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+<canvas id="map" aria-label="The ruined Verdant Reach. Pick a restorer below, then tap a hex to see what it would heal; tap again to place it."></canvas>
+
+<div class="hud" id="hud">
+  <div class="panel score">
+    <div class="leaves"><b id="leaves">0</b><small>🍃 leaves</small></div>
+    <ul class="goals" id="goals"></ul>
+  </div>
+  <div class="side">
+    <button class="btn" id="menuBtn" aria-label="Menu">◀ <span class="lbl">Menu</span></button>
+    <button class="btn" id="helpBtn" aria-label="How to play">? <span class="lbl">How to play</span></button>
+    <button class="btn" id="undoBtn" aria-label="Undo">↶ <span class="lbl">Undo</span></button>
+    <button class="btn go" id="hintBtn" aria-label="Hint">💡 <span class="lbl">Hint</span></button>
+    <button class="btn" id="restartBtn" aria-label="Start again">⟲ <span class="lbl">Start again</span></button>
+    <button class="btn" id="sendBtn" hidden aria-label="Send this game to Claude">🐞 <span class="lbl">Send to Claude</span></button>
+  </div>
+  <div class="panel msg" id="msg" hidden aria-live="polite"></div>
+  <div class="panel stuck" id="stuck" hidden>Out of moves that heal anything. Undo, recycle a restorer, or start again.</div>
+  <div class="bottom" id="bottom">
+    <div class="panel toolinfo" id="toolInfo"></div>
+    <div class="tools" id="tools" role="group" aria-label="Restorers"></div>
+  </div>
+</div>
+<div class="panel tip" id="tip"></div>
+
+<div class="overlay" id="menu">
+  <div class="panel menu">
+    <h1>HexCiv</h1>
+    <p>Regrow the Valley</p>
+    <button class="btn go" id="resume">Resume</button>
+    <button class="btn" id="newGame">New valley</button>
+    <small id="saveNote"></small>
+  </div>
+</div>
+
+<div class="overlay" id="helpView" hidden>
+  <div class="panel help">
+    <h2>Regrow the valley</h2>
+    <p>The settlers left the Verdant Reach dead: dust, stumps, a rotting river and a drained marsh. You have a handful of leaves. Spend them on restorers; every hex a restorer heals pays leaves back.</p>
+    <ol>
+      <li><b>Wind pump</b> loosens dust and clears dead trees around it, and powers sprinklers.</li>
+      <li><b>Sprinkler</b> turns the bare ground around it to grass. It needs a pump within 2 hexes.</li>
+      <li><b>Tree planter</b> turns the grass around it to forest. It needs water within 2 hexes.</li>
+      <li><b>Scrubber, reed filter, water gate</b> deal with the rot, the river and the marsh. The old dam can be opened once.</li>
+    </ol>
+    <p>Pick a restorer, then point at a hex: the hexes it would change light up, with the leaves they pay. Tap (or tap twice on a phone) to place it. Undo is free.</p>
+    <p>Meet the four goals, then recycle every restorer so the valley looks as if no one had been there.</p>
+    <button class="btn go" id="helpClose">Play</button>
+  </div>
+</div>
+
+<div class="overlay" id="endView" hidden>
+  <div class="panel end">
+    <h2>The valley is alive</h2>
+    <p>Birds over the forests, fish in the river, water in the marsh, and no trace of you.</p>
+    <p id="endStats"></p>
+    <button class="btn go" id="again">Regrow it again</button>
+  </div>
+</div>
+
+<script src="src/tiles.js"></script>
+<script src="src/icons.js"></script>
+<script src="src/game.js"></script>
+</body>
+</html>

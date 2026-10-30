@@ -1,44 +1,252 @@
 # HexCiv: game concept (draft)
 
-**Pitch:** a factory game where you build with terrain and water, and the land remembers what you did.
+**Pitch:** a management game that grows into a factory. You place workers on hex tiles, they walk the land to
+chop, fish and haul, and you end with a valley that runs itself, while the land remembers what you did to it.
 
-## Why it is different
+## Pillars
 
-Most automation games put machines and belts on top of a map. HexCiv makes three core rules different.
+1. **You manage, workers do.** The player never gathers by hand. Tap a tile, assign workers to it, and they do the
+   work. Gold buys more workers, and tech makes them better at it. The game is about placing and planning.
+2. **The land is the factory.** Production changes the tiles themselves. Chopping a forest wears it down to
+   grassland, and quarrying a boulder field leaves bare ground. Every choice is visible and permanent.
+3. **Distance is the cost.** Workers walk, and terrain move costs decide how long each trip takes. Where you put a
+   building matters more than how many you build. Later, the river carries goods for free.
+4. **Seasons set the rhythm.** The year is the clock. Each season changes how fast workers walk and how the river
+   flows, so play has a yearly plan: grow, stock up, survive winter.
 
-1. **The land is the factory.** Production changes the tiles themselves. Cutting a forest turns it into grassland,
-   irrigating desert turns it into meadow, and damming the river floods tiles into a lake. Your factory is the shape
-   of the landscape, so every choice is visible and permanent.
-2. **Water is the only conveyor.** Goods float downstream. You dig channels hex by hex to route them, and because
-   water only runs downhill from the peaks, the mountains are your power and logistics source. The river layout is
-   the puzzle.
-3. **Push too hard and the land pushes back.** Clear too much forest and the soil dries, so desert spreads. Drain the
-   swamp and the river floods downstream. Tundra freezes the river in winter. The goal is a valley that sustains
-   itself, not maximum output.
+## Where play starts
+
+The map is covered in fog except for the river valley. The player has a dock on the lake at the river mouth, a
+little gold, and nothing else. Pines stand near the river's upper bend.
+
+1. One worker waits at the dock. Tap a pine tile and assign them as a lumberjack.
+2. The lumberjack walks there, chops, and carries each log to the dock, where it sells. That earns the first gold.
+3. Gold hires more workers. Assign them to more forests, or to a beach to fish for food.
+
+## Core loop
+
+1. **Make:** assign workers to a tile: lumberjacks on forests, fishers on beaches and ponds.
+2. **Move:** workers carry goods along the hexes; later, logs float down the river.
+3. **Sell:** goods sold at the dock earn gold.
+4. **Spend:** gold buys workers, buildings and tech.
+5. **Reveal:** dock contracts pay a bonus and lift the fog, showing new land and terrains.
+
+## Workers
+
+- Hired with gold at the dock. Each worker is assigned to one tile, and the tile decides the job: chop, fish,
+  later quarry, mine or farm. Each tile has a few slots (3 lumberjacks, 2 fishers). Unassigned workers wait at the
+  dock. When a forest is cut out, its lumberjacks move to standing forest nearby, or go idle.
+- Workers walk tile to tile. A tile's move cost is the time it takes to cross it (grass 1, forest 2, swamp 3,
+  mountains 4). Lakes are impassable.
+- A worker carries one item at a time until carrying tech upgrades it.
+- **Upkeep:** every worker costs gold and food each season. A worker who is not paid or fed works at half speed until
+  they are, so the valley slows down instead of locking up. Upkeep caps how fast the player can grow, and food
+  is what makes fishers, and later farms, matter.
+- The player starts with one worker, so the first thing they do is give someone a job.
+
+## Tech tree
+
+Tech is bought with gold, idle-game style. Each branch starts with a manual step, then a worker, then an upgrade
+that automates it.
+
+| Branch | Unlocks (in order) |
+|---|---|
+| Lumber | Chop by click, haulers, axes (workers chop), sawmill (log → plank), log rafting |
+| Stone | Quarry boulder fields by click, pickaxes, stonecutter (stone → block), roads |
+| Mining | Mines on mountains, ore and coal, smelter (ore + coal → metal), tools that speed every worker |
+| Food | Fishing at the beach, berries and mushrooms from groves, smokehouse for winter stock |
+| Farms | Fields on grassland and meadow, wheat, mill, bakery, beehives |
+
+Lumber comes first. Stone, mining, food and farms follow, in the order the fog reveals their terrains. Food and
+farms become urgent as soon as workers need feeding.
+
+**Log rafting** is the first big automation step. Logs dropped into the river float to the dock for free, so a
+camp on the river replaces a long walk. It keeps the old core idea, water as a conveyor, as an upgrade rather than
+a rule.
+
+## Seasons
+
+| Season | Effect |
+|---|---|
+| Spring | Melt speeds up the river; rafting is fastest. Upkeep is due. |
+| Summer | Normal speed. Farms grow. |
+| Autumn | Harvest. Food stock is filled for winter. |
+| Winter | The river freezes, so rafting stops. Snow slows walking. Farms produce nothing, so workers eat from stock. |
+
+The yearly puzzle is to stock enough food and gold before winter to keep every worker paid and fed.
 
 ## What each terrain is for
 
 | Terrain | Role |
 |---|---|
-| Forest, oak grove, pine stand | Lumber: softwood from pines, hardwood from oaks |
-| Mountains, boulder field | Stone, ore and coal; river sources |
-| River | Watermills power adjacent buildings; barges carry goods downstream for free |
-| Meadow, grassland | Farms, beehives, flax for cloth |
-| Swamp | Peat for fuel, herbs for dyes; costly to build on |
-| Desert | Sand for glass, kilns |
-| Tundra | Furs, ice for cold storage |
-| Beach, lake | Fishing, salt pans, the port that exports finished goods |
+| Pine stand, deep forest | Softwood logs |
+| Oak grove | Hardwood logs; berries and mushrooms for food |
+| Boulder field, hills | Stone |
+| Mountains | Ore and coal; the river's source |
+| River | Log rafting; watermills later |
+| Grassland, meadow | Farms, beehives |
+| Pond, beach | Fishing; the dock |
+| Swamp | Peat for fuel; slow to cross |
+| Desert | Sand for glass, later |
+| Tundra | Furs; freezes first in winter |
+| Lake | Impassable; holds the dock |
 
-## Core loop
+## The land remembers
 
-1. Place an extractor on a matching tile.
-2. Link tiles with roads, cart tracks or channels.
-3. Chain production (log → plank → furniture, sand + coal → glass).
-4. Ship to the port to fill orders, which reveals new land.
+- Chopping wears a forest down: deep forest → pine stand → grassland. Left alone outside winter, cut land grows
+  back one stage at a time; the Forestry tech doubles the speed.
+- Quarrying wears a boulder field down to grassland.
+- Too much clearing near the river dries the soil, and desert spreads. This is a late-game pressure, not part of the
+  first prototype.
 
-## First prototype
+## Prototype version 6: Regrow
 
-Water as the only conveyor, on the Verdant Reach map: dig channels from the river, float logs from a lumber camp
-to a sawmill, and fill one order at the port.
+`play.html` is now a place-and-transform puzzle, after play showed that ordering a crew and waiting on timers was not
+fun. v5 is frozen in `archive/9-prototype-v5`. There are no workers, no seasons and no clock: every tap changes the map.
 
-Move costs and defense values in `src/tiles.js` are placeholders from the map viewer and will become build costs.
+- **Leaves.** You start with 10. Every restorer costs leaves; every hex it heals pays leaves back (dust or debris 1,
+  rot 1, grass 1, forest 2, river 2, marsh 2). A good placement pays for itself; overlapping ones don't.
+- **The land ladder.** Rot → dust → bare (with dead trees or stumps) → grass → forest. Water: dirty or dry river →
+  clean; drained marsh → healed.
+- **Restorers.** Wind pump (4): loosens dust and clears debris in range 1, powers sprinklers within 2. Sprinkler (6):
+  bare to grass in range 1, needs a pump within 2. Tree planter (8): grass to forest in range 1, needs water within 2
+  (sprinkler, clean river, pond, healed marsh). Scrubber (6): rot to dust next to it. Reed filter (8): on a dirty river,
+  cleans river in range 1 and greens bare ground beside it. Water gate (10): on the drained marsh, heals marsh in range
+  1. Open the dam (12, once): refills the dry riverbed.
+- **Preview before you commit.** Pick a restorer and point at a hex: its reach, every hex it would change (coloured by
+  the change) and the leaves it would pay show on the map; a red edge and a line in the tool bar say why it can't go
+  there. A mouse places on click; a finger taps once to preview, twice to place. Undo is free and unlimited.
+- **Goals.** Green 70% of the land, 25 forest hexes, the whole river clean, the whole marsh healed. Then recycle every
+  restorer (half its leaves back; what it healed stays healed) and the valley is finished. Leaves left are the score.
+- **Help when stuck.** Hint picks the best affordable move and points at it; a banner says when nothing affordable heals
+  anything (recycle or undo).
+- A greedy bot finishes the valley in about 75 moves, recycling spent restorers mid-game to keep going.
+
+## Prototype version 5: The Valley Unfolds
+
+`play.html` follows the "Making the Valley Unfold" doc: every question a player had to ask in v4 now has an answer on
+screen. v4 is frozen in `archive/8-prototype-v4`; the land simulation, seasons, rot, camps and the action bar carry over.
+
+- **One crew that waits for your word.** Trades are gone. The crew works only where you have asked: hexes with a plan,
+  deadwood you marked with Clear, forests you marked with Fell (down to a third, then the order lifts). On its own it
+  only burns rot on your land, fishes when food runs low (or near a jetty you built), waters planted hexes in summer and
+  gathers seed in autumn. Left alone, the crew sits idle and "Needs you" says why.
+- **Camps speed work up, they don't gate it.** A camp houses people and makes one kind of work twice as fast within
+  its range: woodcutter's tent (clearing, felling), gardener's tent (land work), jetty (fishing, farming), well
+  (watering), fire watch (burning rot). The Seed bed raises saplings; the dock is home and the store.
+- **Five chapters.** A goal line under the season names one thing to do, and a gold hex with a bobbing arrow shows
+  where. Selecting it shows a whisper in the tile panel. Each chapter unlocks the next layer:
+  1. *Warm hearth*: clear the deadwood by the dock (about a minute).
+  2. *First green*: turn bare ground into grassland with a Field plan. Unlocks the tech tree.
+  3. *Shelter*: grow the crew to 4. Unlocks hiring, camps and the trader's boat.
+  4. *First forest*: grow a pine stand from saplings. Unlocks Forest and Rest plans, the Seed bed and the well; the
+     trader leaves 6 seed.
+  5. *Living water*: heal a marsh or clean a river. Unlocks marsh and river plans and the fire watch.
+  Tech nodes, plans and camps from later chapters stay hidden until their chapter.
+- **Fix-it chains.** A hex's panel lists what stands between it and its next step, in order, each with a button where
+  there is one: learn the missing upgrade, build a Seed bed on the best free hex (or buy one for it), buy seed or logs
+  from the boat. "Needs you" groups hexes by blocker.
+- **Visible time.** Work, deadwood and growth show a bar under the hex and in the panel, with an ETA that counts the
+  seasons ahead (winter pauses growth). Season-locked steps say when their season starts.
+- **Map feedback.** Stall markers are twice the size; idle workers show a "z z" bubble.
+- **Faster first forest.** Saplings can be planted in summer too; seedlings take 100 growth-seconds and young wood 150.
+
+## Prototype version 4: Playing on the Hex
+
+`play.html` moves every decision back onto the map, following the "Playing on the Hex" doc. v3 is frozen in
+`archive/7-prototype-v3`; its soil, food and water simulation, seasons, rot and the dock carry over.
+
+- **Tap a hex, act on it.** Selecting a hex opens an action bar with only what fits that hex now: Buy, a plan
+  (Forest, Field, Rest), Build a camp, a priority. On a camp: Hire, Move in, Grow, and the woodcutters' cutting rule.
+- **Tap again to lend a hand.** A second tap on the selected hex speeds up its current step by 3 work-seconds, or
+  pulls a log out of deadwood or forest, waters a thirsty plant, or catches a fish every few taps. Work gloves double it.
+- **Camps hold the people.** The dock is home; a Woodcutter's tent, Gardener's tent, Fishing jetty, Well, Seed bed
+  (with Nursery) and Fire watch (with Ditch blocking) are built on hexes you own. Each works the hexes in its range
+  (1 or 2) and has beds; hiring needs a free bed. The global crew panel is gone.
+- **Camps grow with the land.** Tent, hut, house: each level needs living hexes in range plus gold and logs, and
+  brings more beds; a house reaches one hex further. The dock grows into a hamlet (8 living hexes in the valley) and a
+  village (20), with more beds, more trade income and warmer houses.
+- **One hearth per camp.** In winter each camp with people burns a log every 30 seconds (longer in bigger houses);
+  everyone who sleeps there stays warm while it burns.
+- **Gold from living land.** Every living hex you own earns gold each minute (grass 3, meadow 5, pines 4, old forest
+  6, water 2 to 4; half for land not yet fully alive), plus the dock's trade (10, 20, 35). Winter halves it. Between
+  boats the market stall sells one unit of surplus every 6 seconds at a lower price. The boat also sells seed.
+- **Needs you.** One button cycles through what is waiting on you: camps that can grow, empty camps, stuck plans,
+  unattended rot, the boat in with surplus to sell.
+- **On the map.** The next hex the rot will take blinks harder as the season runs out; thirsty plants show a drop;
+  hexes hiding a find glint under the fog (a seed chest, coins, a survivor, old tools, a cart of logs).
+- **Learning by doing.** Eight upgrades cost half their gold once you have done the work: burning rot, planting,
+  cutting logs, fishing, mulching, gathering seed, watering, loosening.
+- **The valley answers.** Healthy forests seed a bare neighbour each spring; at 10, 25, 40, 60 and 80% of the valley
+  alive, birds, deer, bees and a new family come back.
+
+## Prototype version 3: Healing the Land
+
+`play.html` now plays the staged healing and management design from the "Healing the Land" doc. v2 is frozen in
+`archive/6-prototype-v2`.
+
+- **Tile values.** Every land tile has soil (Hard, Firm, Loose), food (Dead, Poor, Fed, Rich), water (Dry, Damp, Wet)
+  and a cover (bare, seedlings, young wood, pines, forest, grove, clover, grass, meadow). The art shows them: cracks on
+  hard soil, furrows on loose soil, mulch spots once the soil is fed, yellowing leaves when a tile dries out.
+- **Plans, not postings.** The player gives a tile a plan (Forest, Field, Rest; Heal marsh and Clean river on water
+  tiles) and a priority. The tile panel shows the plan's steps as chips; the current one is outlined, and a stuck tile
+  says why: wrong season, missing tech, no stock at the dock, or no one in the crew. Drag from a planned tile to paint
+  the same plan.
+- **Crews.** Workers join one of four crews: land, water carriers, woodcutters, fishers and farmers. Each crew picks its
+  own work by priority and distance. Water carriers help the land crew outside summer; the land crew cuts firewood in
+  winter. Workers get a star of skill for every 150 seconds in a crew, up to three.
+- **Seasons gate the steps.** Planting and sowing happen in spring and autumn, nothing grows in winter, and summer dries
+  the land one level every 45 seconds. Plants left dry for 40 seconds die, so a forest plan needs water carriers.
+  Seedlings take 450 growing seconds to become young wood and 900 more to become a pine stand of 20 logs.
+- **Forests last, and run out.** Old forest holds 120 logs, pines 60, a grove 50, and a deadwood field 30. Woodcutters
+  can be told to cut to the last log, leave a third, or take only deadwood. Wood near the dock runs out in a few years
+  unless the player buys more land or plants.
+- **The dock.** Keep lines for logs and food: the dock sells everything above them when the trader's boat is in (the
+  first 60 seconds of spring, summer and autumn). The boat also sells logs (5g) and food (4g). With the Trade post, the
+  dock sells surplus and buys back up to the keep lines on its own. In autumn a notice warns when the woodpile is short
+  of what winter will burn.
+- **Rot.** The land crew burns rot in spring, summer and autumn. Workers walk around rot where they can, a burning fire
+  halves the sickness, and the dock's hearth keeps the crew safe at home.
+- **Tech tree.** 21 upgrades in six branches: Soil, Water, Plants, Forest, Clean-up, Food and trade. Dam breaking,
+  Quarrying and Mine sealing are shown as coming later.
+- **Lenses and the ribbon.** Soil, Food and Water lenses tint the map by that value. The season ribbon shows what each
+  season allows, with a marker for now. Space pauses.
+
+## Prototype version 2: Restore the Valley
+
+`play.html` now plays the ruined Verdant Reach. The valley starts grey: stump fields, deadwood, dust fields, a dirty
+river behind an old dam, a dry riverbed, a drained marsh, and rot creeping down from a leaking mine. Only the dock
+and a few tiles around it are alive.
+
+- **No goal text.** The map shows what is wrong. Living tiles are in colour and move (glints, birds, smoke from the
+  hut); ruined tiles are faded and still. Notices only report what already happened.
+- **Land costs gold.** You own the dock and six hexes. Tap a hex next to your border to buy it; ruined land is
+  cheap and living land is dear. You see two hexes past your border.
+- **Workers can die** of hunger, cold (no logs in winter), rot sickness, or the spring flood around the marsh. Each
+  death leaves a grave and a notice saying who and why. The run ends when the last one dies.
+- **Jobs heal the land:** clear deadwood for logs, plant saplings, compost dust, burn rot, filter the river, fish and
+  farm. Cut a living forest to its last log and it turns to stumps.
+- **Seasons gate the work:** nothing is planted or composted in frozen winter ground, saplings go in only in spring
+  or autumn, and rot burns only in summer and autumn. Growth runs ×1.5 in spring, ×1 in summer, ×0.5 in autumn and
+  stops in winter. Saplings take about three growing seasons to become a pine stand.
+- **Forests last:** a pine stand holds 60 logs, old forest 120, deadwood 30. A rested stand regrows 5 logs a season,
+  old forest cut below a third thins to a pine stand, and a stand cut to its last log becomes stumps.
+- **Rot** spreads one tile a season outside winter, from the mine through every rot tile still joined to it. A living
+  forest or a clean river holds it for a season.
+- **Tech:** Fishing nets, Axes, Saplings, Compost, Reed filters, Forestry and Farms. Dam breaking, Quarrying,
+  Re-wetting, Log rafting and Mine sealing are on the tree as coming later.
+
+## First prototype (version 1)
+
+Frozen in `archive/5-prototype-v1/`. The design has since moved to *Restore the Valley*: the valley starts ruined,
+there is no goal text, the run ends when the crew dies, and gold buys land. Version 2 gets a new ruined map.
+
+
+The Verdant Reach map with fog, played full screen with a game HUD: resources on the left, menu, tech tree and hiring
+on the right, and a main menu that resumes a saved game. Tap a tile to open its panel and assign lumberjacks or
+fishers, pay upkeep in gold and food, and buy Axes, Fishing nets, Baskets, Sawmill, Forestry and Log rafting from
+the tech tree. Win by filling one dock contract before the first winter. Stone, Mining and Farms show on the tree as coming
+later.
+
+Move costs in `src/tiles.js` become walking times. Defense values are left over from the map viewer and will be
+removed or reused.

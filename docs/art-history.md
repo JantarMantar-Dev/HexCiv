@@ -38,3 +38,31 @@ screenshot. The map then grew to 176 tiles and 15 terrains.
 ## 5. HexCiv (`src/`)
 
 The bright-tile engine with the strategy style removed, plus PNG export, CI art checks and this documentation.
+
+## 6. Prototype v1 (`archive/5-prototype-v1`)
+
+The first playable game on the clean Verdant Reach map: worker assignment, upkeep, seasons, contracts and the tech
+tree. Frozen as version 1 when the design moved to a ruined valley, where the map and art have to show the damage
+and the healing on their own.
+
+## 7. Prototype v2 (`archive/6-prototype-v2`)
+
+The first ruined valley: faded, still ruin tiles drawn from the bright tiles by recolouring and hand-placed details
+(stumps, fallen trunks, cracks, the dam, the mine), a rot overlay, an owned-land border, and colour coming back as
+tiles heal.
+
+## 8. Prototype v3 (`archive/7-prototype-v3`)
+
+Tile values drawn on the map (cracks, furrows, mulch, dry leaves), plan flags and stall markers, lenses, the
+woodpile at the dock and the trader's boat. Frozen when play moved back onto the hexes with camps in version 4.
+
+## 9. Prototype v4 (`archive/8-prototype-v4`)
+
+Camps drawn on their hexes as tents, huts and houses that grow with the land, flags and level pips, range highlights,
+the action bar, a blinking next-rot hex, glints on finds and drop icons on thirsty plants. Frozen when version 5
+removed trades and began to unfold the valley in chapters.
+
+## 10. Prototype v5 (`archive/9-prototype-v5`)
+
+A chapter goal line and a glowing goal hex with a bobbing arrow, progress bars under hexes, twice-size stall
+markers and idle "z z" bubbles. Frozen when version 6 turned the game into a place-and-transform puzzle.
