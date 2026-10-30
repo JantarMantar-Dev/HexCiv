@@ -99,6 +99,29 @@ The yearly puzzle is to stock enough food and gold before winter to keep every w
 - Too much clearing near the river dries the soil, and desert spreads. This is a late-game pressure, not part of the
   first prototype.
 
+## Prototype version 6: Regrow
+
+`play.html` is now a place-and-transform puzzle, after play showed that ordering a crew and waiting on timers was not
+fun. v5 is frozen in `archive/9-prototype-v5`. There are no workers, no seasons and no clock: every tap changes the map.
+
+- **Leaves.** You start with 10. Every restorer costs leaves; every hex it heals pays leaves back (dust or debris 1,
+  rot 1, grass 1, forest 2, river 2, marsh 2). A good placement pays for itself; overlapping ones don't.
+- **The land ladder.** Rot → dust → bare (with dead trees or stumps) → grass → forest. Water: dirty or dry river →
+  clean; drained marsh → healed.
+- **Restorers.** Wind pump (4): loosens dust and clears debris in range 1, powers sprinklers within 2. Sprinkler (6):
+  bare to grass in range 1, needs a pump within 2. Tree planter (8): grass to forest in range 1, needs water within 2
+  (sprinkler, clean river, pond, healed marsh). Scrubber (6): rot to dust next to it. Reed filter (8): on a dirty river,
+  cleans river in range 1 and greens bare ground beside it. Water gate (10): on the drained marsh, heals marsh in range
+  1. Open the dam (12, once): refills the dry riverbed.
+- **Preview before you commit.** Pick a restorer and point at a hex: its reach, every hex it would change (coloured by
+  the change) and the leaves it would pay show on the map; a red edge and a line in the tool bar say why it can't go
+  there. A mouse places on click; a finger taps once to preview, twice to place. Undo is free and unlimited.
+- **Goals.** Green 70% of the land, 25 forest hexes, the whole river clean, the whole marsh healed. Then recycle every
+  restorer (half its leaves back; what it healed stays healed) and the valley is finished. Leaves left are the score.
+- **Help when stuck.** Hint picks the best affordable move and points at it; a banner says when nothing affordable heals
+  anything (recycle or undo).
+- A greedy bot finishes the valley in about 75 moves, recycling spent restorers mid-game to keep going.
+
 ## Prototype version 5: The Valley Unfolds
 
 `play.html` follows the "Making the Valley Unfold" doc: every question a player had to ask in v4 now has an answer on
