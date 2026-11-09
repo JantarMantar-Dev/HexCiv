@@ -70,7 +70,7 @@ markers and idle "z z" bubbles. Frozen when version 6 turned the game into a pla
 ## 11. Prototype v6 (`archive/10-prototype-v6`)
 
 Regrow, the place-and-transform puzzle, with the v2 ruin art: recoloured, faded healthy tiles and small procedural
-restorers. Frozen (git tag `art-v1-before`) as the "before" for the art rebuild.
+restorers. Frozen (commit `1efc860`) as the "before" for the art rebuild.
 
 ## 12. Art rebuild (`src/`, v7)
 
