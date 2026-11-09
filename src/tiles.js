@@ -10,6 +10,9 @@ function buildHexTiles() {
     sky: '#5f9edd', mist: '#a9d5f0', cloud: '#f4f6ea', rose: '#e8587d',
     // biome ramps added for the expanded map
     sand0: '#f3dca0', sand1: '#e2bd78', snow1: '#dce7ee', snowsh: '#c3d3e0', olive: '#5d7d3a', olive2: '#45612f', murk: '#3f6662', murk2: '#2c4a4f',
+    // ruin ramps: tilled loam, weathered dead wood, the rot, and dried marsh
+    loam0: '#c08a5a', loam1: '#9a6844', ash: '#a39385', ash2: '#6e5d58',
+    rot0: '#a58bbd', rot1: '#6c5580', rot2: '#46365a', rot3: '#2a1f37', dun0: '#c2ad73', dun1: '#97844f', dun2: '#6a5c3a', scum: '#9fae62',
   };
   const INSET = [8, 7, 7, 6, 5, 5, 4, 4, 3, 3, 2, 1, 1, 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 7, 7, 8];
   const FW = 32, FH = 28, CW = 32, CH = 48, FY = 16, BAND = 3;
@@ -118,6 +121,56 @@ function buildHexTiles() {
     dune: { bx: 6, by: 3, rows: ['.....HHL.....', '...HHHHLLMM..', '.HHHHHHLLMMMM', 'HHHHHHHLMMMMM'] },
     ripple: { bx: 1, by: 1, rows: ['.LLL', 'L...'] },
     shell: { bx: 0, by: 0, rows: ['HL'] },
+    stump: { bx: 2, by: 3, rows: ['.HHL.', 'HLCLM', 'TTTBB', 'TTBBB'] },
+    stumpL: { bx: 3, by: 6, rows: [
+      '.HHHHL.',
+      'HLLCLLM',
+      'HLCHCLM',
+      'TLLLLMB',
+      'TTTTBBB',
+      'TTTBBBB',
+      'TT.B.BB'] },
+    snag: { bx: 4, by: 11, rows: [
+      'B.......B.',
+      '.B..B..B..',
+      '.B..B.B...',
+      '..B.TB....',
+      'B..TB...B.',
+      '.B.TB..B..',
+      '..TTBBB...',
+      '...TB.....',
+      '...TB.....',
+      '...TBB....',
+      '..TTBB....',
+      '.TTTBBB...'] },
+    ruin: { bx: 6, by: 8, rows: [
+      '...RR.........',
+      '..RRrr........',
+      '.RRrrrr...P...',
+      'RRrrrrrrr.PS..',
+      'PPPPPPPPPPPS.P',
+      'PSSPKKPPSPPSPS',
+      'PSSPKKPSKKPSSS',
+      'PPPPKKPPKKPSS.',
+      'SSSSKKSSSSSSS.'] },
+    portal: { bx: 4, by: 7, rows: [
+      'HHHHHHHHH',
+      'BBBBBBBBB',
+      'TBKKKKKTB',
+      'TBKKKKKTB',
+      'TBKKKKKTB',
+      'TBKKKKKTB',
+      'TBKKKKKTB',
+      'TB.....TB'] },
+    bubble: { bx: 1, by: 1, rows: ['.H.', 'HDH', '.H.'] },
+    damWall: { bx: 9, by: 6, rows: [
+      '.T...T...T...T...T.',
+      'HHHHHHHHHHHHHHHHHHH',
+      'TTTTTTTTTTTTTTTTTTT',
+      'BBBBBBBBBBBBBBBBBBB',
+      'HHHHHHHHHHHHHHHHHHH',
+      'TTTTTTTTTTTTTTTTTTT',
+      'SSPSSPSSPSSPSSPSSPS'] },
     deadTree: { bx: 3, by: 6, rows: ['B....B.', '.B..B..', '.B.BB.B', '..BBBB.', '...BB..', '...BB..', '..BBBB.'] },
     mtn: { bx: 10, by: 13, rows: [
       '.........W..........',
@@ -162,6 +215,16 @@ function buildHexTiles() {
     drift: { H: C.cloud, L: C.snow1, M: C.snowsh },
     shell: { H: C.cloud, L: C.pale },
     deadTree: { B: C.bark },
+    stump: { H: C.sand0, L: C.sand1, C: C.clay, M: C.clay, T: C.soil, B: C.bark },
+    snag: { T: C.ash, B: C.ash2 },
+    deadLog: { T: C.ash, B: C.ash2, H: C.sand1, D: C.bark },
+    deadReed: { T: C.clay, M: C.sand1, L: C.sand0, D: C.soil },
+    ruin: { R: C.clay, r: C.soil, S: C.stone, P: C.pale, K: C.ink },
+    portal: { H: C.clay, B: C.bark, T: C.soil, K: C.ink },
+    bubble: { H: C.rot0, D: C.rot2 },
+    damWall: { H: C.clay, T: C.soil, B: C.bark, S: C.stone, P: C.pale },
+    pebble: { H: C.cloud, L: C.pale, M: C.stone, D: C.stone },
+    rotTuft: { L: C.rot1 },
     snowPine: { L: C.cloud, M: C.pine, D: C.deep, B: C.bark },
     snowRock: { H: C.cloud, L: C.pale, M: C.stone, D: C.deep },
     driftwood: { T: C.clay, B: C.soil, H: C.sand0, M: C.clay, D: C.sand1 },
@@ -171,11 +234,13 @@ function buildHexTiles() {
   const OUT = { // [soft (top/left), hard (bottom/right)]
     oak: [C.pine, C.deep], pine: [C.deep, C.ink], bush: [C.leaf, C.pine], rock: [C.stone, C.ink],
     hill: [C.leaf, C.pine], log: [C.bark, C.ink], mush: [C.bark, C.bark],
+    stump: [C.bark, C.ink], snag: [null, C.bark], deadLog: [C.ash2, C.ink], ruin: [C.stone, C.ink], portal: [C.bark, C.ink], damWall: [C.bark, C.ink],
+    pebble: [null, C.stone], deadReed: [null, null],
     cactus: [C.leaf, C.pine], snowPine: [C.deep, C.ink], snowRock: [C.stone, C.ink], dune: [null, C.clay], drift: [null, C.pale], driftwood: [C.clay, C.soil], rockD: [C.soil, C.bark], mtn: [C.stone, C.ink],
   };
   // sprite name -> [shape, legend family]; families share a legend and outline
-  const SHAPE = { driftwood: 'log', oakS: 'oakS', snowPine: 'pine', snowRock: 'rock', rockD: 'rock', drift: 'dune', tuftB: 'tuft', mtnS: 'mtnS' };
-  const FAMILY = { oakS: 'oak', rockS: 'rock', tuftB: 'tuftB', mtnS: 'mtn' };
+  const SHAPE = { deadLog: 'log', deadReed: 'reed', pebble: 'rockS', stumpL: 'stumpL', driftwood: 'log', oakS: 'oakS', snowPine: 'pine', snowRock: 'rock', rockD: 'rock', drift: 'dune', tuftB: 'tuft', mtnS: 'mtnS' };
+  const FAMILY = { stumpL: 'stump', oakS: 'oak', rockS: 'rock', tuftB: 'tuftB', mtnS: 'mtn' };
 
   // ---------- layouts: what stands on each tile, by base point in face coordinates ----------
   const TUFTS = [[7, 9], [13, 5], [20, 6], [25, 11], [9, 15], [16, 13], [24, 18], [5, 14], [12, 22], [19, 24], [27, 15], [15, 19]];
@@ -210,6 +275,23 @@ function buildHexTiles() {
       ['mtn', 12, 15], ['mtnS', 21, 21], ['rockS', 7, 21], ['rockS', 24, 11]] },
     beach: { name: 'Beach', move: 1, def: 0, ground: 'beach', shore: true, tufts: [1, 4, 6, 0], items: [
       ['driftwood', 14, 11], ['shell', 9, 9], ['shell', 21, 16], ['rockS', 23, 8], ['shell', 7, 16], ['tuftB', 18, 6]] },
+    // ---- ruins: what the settlers left. The game swaps a hex to one of these until it is healed. ----
+    dust: { name: 'Dust', ruin: true, ground: 'dust', tufts: [0, 3, 6, 9], items: [['pebble', 21, 9], ['pebble', 9, 20]] },
+    bare: { name: 'Bare soil', ruin: true, ground: 'bare', tufts: [1, 4, 7, 10, 11], items: [['pebble', 22, 21]] },
+    stumps: { name: 'Stump field', ruin: true, ground: 'bare', tufts: [2, 5, 10], items: [
+      ['stumpL', 10, 10], ['stump', 21, 8], ['stumpL', 19, 18], ['stump', 8, 20], ['deadLog', 22, 21]] },
+    deadwood: { name: 'Dead trees', ruin: true, ground: 'bare', tufts: [4, 10], items: [
+      ['snag', 9, 11], ['snag', 22, 9], ['deadLog', 15, 15], ['stump', 25, 18], ['deadLog', 9, 21], ['snag', 19, 22]] },
+    farmruin: { name: 'Old farmhouse', ruin: true, ground: 'dust', tufts: [0, 9, 11], items: [['ruin', 15, 14], ['pebble', 24, 18], ['pebble', 8, 20]] },
+    rot: { name: 'Rot', ruin: true, ground: 'rot', tufts: [0, 2, 4, 6, 8, 10, 11], items: [['bubble', 24, 9], ['bubble', 8, 20]] },
+    rotRiver: { name: 'Rotten river', ruin: true, ground: 'rot', river: true, riverTone: 'rot', tufts: [1, 5, 9], items: [['bubble', 7, 9], ['bubble', 24, 19]] },
+    riverDirty: { name: 'Dirty river', ruin: true, ground: 'sick', river: true, riverTone: 'dirty', tufts: 'all', items: [
+      ['deadReed', 8, 9], ['pebble', 9, 20], ['deadReed', 22, 19], ['stump', 24, 8]] },
+    riverDry: { name: 'Dry riverbed', ruin: true, ground: 'dust', river: true, riverTone: 'dry', tufts: [0, 3, 7, 11], items: [['pebble', 8, 10], ['deadReed', 22, 19], ['pebble', 24, 9]] },
+    dam: { name: 'Old dam', ruin: true, ground: 'dust', river: true, riverTone: 'dam', tufts: [3, 11], items: [['damWall', 15, 15]] },
+    marshDry: { name: 'Drained marsh', ruin: true, ground: 'dryswamp', tufts: [0, 6, 11], items: [
+      ['deadTree', 22, 9], ['deadReed', 6, 12], ['deadReed', 15, 18], ['deadReed', 9, 22], ['stump', 25, 20], ['deadTree', 6, 19]] },
+    mine: { name: 'Leaking mine', ruin: true, ground: 'scree', tufts: [9, 10], items: [['mtn', 12, 14], ['portal', 21, 20], ['pebble', 7, 21]] },
   };
   // Edges of the flat-top hex, by the neighbour they face. Rivers run between edge midpoints; beaches flood the edges that face water.
   const DIRS = ['N', 'NE', 'SE', 'S', 'SW', 'NW'];
@@ -234,6 +316,26 @@ function buildHexTiles() {
     beach: { base: C.sand0, tuft: { L: C.grass }, shade: C.sand1, band: [C.clay, C.soil, C.bark] },
     tundra: { base: C.snow1, tuft: { L: C.sage }, shade: C.snowsh, band: [C.pale, C.stone, C.deep] },
     swamp: { base: C.olive, fleck: C.olive2, tuft: { L: C.grass }, shade: C.olive2, band: [C.soil, C.bark, C.bark] },
+    dust: { base: C.sand1, plates: true, tuft: { L: C.clay }, shade: C.clay, band: [C.clay, C.soil, C.bark] },
+    bare: { base: C.loam1, furrows: true, tuft: { L: C.sand1 }, shade: C.soil, band: [C.soil, C.bark, C.bark] },
+    rot: { base: C.rot2, ooze: true, tuft: { L: C.rot1 }, shade: C.rot3, band: [C.rot3, C.ink, C.ink] },
+    sick: { base: C.olive, fleck: C.olive2, tuft: { L: C.dun0 }, shade: C.olive2, band: [C.soil, C.bark, C.bark] },
+    dryswamp: { base: C.dun1, fleck: C.dun2, mudPools: true, tuft: { L: C.dun0 }, shade: C.dun2, band: [C.soil, C.bark, C.bark] },
+    scree: { base: C.ash, fleck: C.ash2, tuft: { L: C.pale }, shade: C.stone, band: [C.stone, C.deep, C.ink] },
+  };
+  // Dried mud: plates around hand-placed seeds. A crack runs where two plates meet; each plate catches light on its
+  // upper-left rim and sinks into shade on its lower-right one.
+  const PLATES = [[5, 5], [13, 2], [21, 6], [28, 10], [3, 14], [11, 11], [19, 14], [26, 19], [8, 20], [16, 22], [22, 27], [12, 28], [4, 26]];
+  const plateOf = (x, y) => { let best = 0, bd = 1e9; PLATES.forEach(([px, py], i) => { const d = (x - px) ** 2 + (y - py) ** 2 + ((x * 7 + y * 3) % 5) * 0.8; if (d < bd) { bd = d; best = i; } }); return best; };
+  const crackAt = (x, y) => plateOf(x, y) !== plateOf(x + 1, y) || plateOf(x, y) !== plateOf(x, y + 1);
+  const WET = new Set(['damWall']); // sprites built in the water on purpose
+  const OOZE = [[12, 10, 5.6, 2.5], [21, 19, 4.2, 1.9]];
+  const RIVER_TONE = { // [deep, water, highlight, lit bank, shaded bank]
+    clean: [null, null, null, null, null],
+    dirty: [C.murk2, C.murk, C.scum, C.dun0, C.olive2],
+    dry: [C.bark, C.soil, C.pale, C.sand0, C.clay],
+    dam: [C.bark, C.soil, C.pale, C.sand0, C.clay],
+    rot: [C.rot3, C.rot2, C.rot0, C.rot1, C.rot3],
   };
   const SWAMP_POOLS = [[10, 9, 4.6, 2.2], [20, 15.5, 5.2, 2.6], [13, 21, 3.6, 1.8]];
   const poolD = (x, y, [px, py, rx, ry]) => ((x + 0.5 - px) / rx) ** 2 + ((y + 0.5 - py) / ry) ** 2;
@@ -243,8 +345,11 @@ function buildHexTiles() {
     grass: [C.leaf, C.lime], meadow: [C.leaf, C.glow], grove: [C.pine, C.lime], pines: [C.deep, C.grass], forest: [C.deep, C.grass],
     pond: [C.leaf, C.lime], lake: [C.deep, C.mist], rocks: [C.stone, C.pale], hills: [C.leaf, C.glow],
     desert: [C.clay, C.sand0], tundra: [C.pale, C.cloud], swamp: [C.pine, C.sage], river: [C.leaf, C.lime], mountains: [C.stone, C.pale], beach: [C.clay, C.cloud],
+    dust: [C.clay, C.sand0], bare: [C.soil, C.loam0], stumps: [C.soil, C.loam0], deadwood: [C.soil, C.loam0], farmruin: [C.clay, C.sand0],
+    rot: [C.rot3, C.rot1], rotRiver: [C.rot3, C.rot1], riverDirty: [C.olive2, C.dun0], riverDry: [C.clay, C.sand0], dam: [C.clay, C.sand0],
+    marshDry: [C.dun2, C.dun0], mine: [C.stone, C.cloud],
   };
-  const DEFAULT_CTX = { river: { river: ['N', 'SE'] }, beach: { shore: ['SE', 'S'] } };
+  const DEFAULT_CTX = { river: { river: ['N', 'SE'] }, riverDirty: { river: ['N', 'SE'] }, riverDry: { river: ['N', 'SE'] }, dam: { river: ['N', 'SE'] }, rotRiver: { river: ['N', 'SE'] }, beach: { shore: ['SE', 'S'] } };
   const WATER2 = '#4b86c9'; // the one extra tone: deep water
   function pondShape(x, y) { const dx = (x + 0.5 - 16.5) / 9.5, dy = (y + 0.5 - 13.5) / 5.6; return dx * dx + dy * dy; }
   // Variant 1 mirrors every base point left to right so neighbouring tiles of one biome do not repeat.
@@ -269,6 +374,21 @@ function buildHexTiles() {
       if (!inFace(x, y)) continue;
       let c = b.water === 'lake' ? C.sky : G.base;
       if (G.fleck && margin(x, y) > 2 && [0, 3].includes((x * 3 + y * 5) % 11)) c = G.fleck; // scattered darker flecks in pairs
+      const mx = b.tuftsAt ? FW - 1 - x : x;
+      if (G.plates) { // dried mud plates: dark crack, lit rim below/right of it, shaded rim above/left of it
+        if (crackAt(mx, y)) c = C.clay;
+        else if (crackAt(mx, y - 1)) c = C.sand0;
+      }
+      if (G.furrows) { // ploughed rows that bow gently across the hex
+        const k = (y + Math.round(Math.sin(mx / 5.5) * 1.2) + 40) % 4;
+        c = k === 0 ? C.soil : k === 1 ? C.loam0 : C.loam1;
+      }
+      if (G.ooze || G.mudPools) {
+        const d = Math.min(...OOZE.map((p) => poolD(mx, y, p)));
+        if (G.ooze) { if (d <= 1) c = OOZE.some(([px, py]) => (mx === px - 2 || mx === px - 1) && y === py - 1) ? C.rot0 : C.rot3; else if (d <= 1.5) c = C.rot1; }
+        else if (d <= 1) c = crackAt(mx, y) ? C.bark : d < 0.6 ? C.soil : C.clay;
+        else if (d <= 1.35) c = C.dun2;
+      }
       cv.set(x, y + FY, c);
     }
     if (b.water === 'lake') {
@@ -295,7 +415,8 @@ function buildHexTiles() {
     const clear = (x, y) => b.items.every(([, ix, iy]) => Math.abs(ix - x) > 3 || Math.abs(iy - y) > 3);
     tl.forEach((i) => {
       const [x, y] = tuftXY(b, i);
-      if ((b.water === 'pond' && pondShape(x, y) <= 1.5) || inPool(x, y) || W.keepOut(x, y) || !clear(x, y)) return;
+      const mx = b.tuftsAt ? FW - 1 - x : x, inOoze = (G.ooze || G.mudPools) && OOZE.some((p) => poolD(mx, y, p) <= 1.7);
+      if ((b.water === 'pond' && pondShape(x, y) <= 1.5) || inPool(x, y) || inOoze || W.keepOut(x, y) || !clear(x, y)) return;
       cv.sprite(x - 1, y - 1 + FY, SPR[G.tuftShape || 'tuft'].rows, G.tuft);
     });
     // border: outer line all round, a bevel line inside the upper-left edges, a shade line inside the lower-right edges
@@ -320,10 +441,13 @@ function buildHexTiles() {
     // river: banks, water, a deeper centre and a few highlight strokes. Drawn over the border so neighbours join up.
     if (b.river) for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
       if (!inFace(x, y)) continue;
-      const d = W.river(x, y);
-      if (d < 2.7) cv.set(x, y + FY, d < 1.2 ? WATER2 : C.sky);
-      else if (d < 3.7) cv.set(x, y + FY, ring(x, y) ? edge : x + y < 30 ? C.lime : C.leaf);
-      if (d < 2 && d >= 1.2 && (x * 2 + y) % 9 === 0) { cv.set(x, y + FY, C.mist); }
+      const d = W.river(x, y), [tD, tW, tH, tL, tS] = RIVER_TONE[b.riverTone || 'clean'];
+      if (d < 2.7) cv.set(x, y + FY, d < 1.2 ? tD || WATER2 : tW || C.sky);
+      else if (d < 3.7) cv.set(x, y + FY, ring(x, y) ? edge : x + y < 30 ? tL || C.lime : tS || C.leaf);
+      if (d < 2 && d >= 1.2 && (x * 2 + y) % 9 === 0) { cv.set(x, y + FY, tH || C.mist); }
+      if (b.riverTone === 'dry' && d < 2.7 && crackAt(x, y)) cv.set(x, y + FY, C.bark); // the bed has cracked as it dried
+      if (b.riverTone === 'dirty' && d < 2.7 && (x * 5 + y * 3) % 17 === 0) { cv.set(x, y + FY, C.scum); cv.set(x + 1, y + FY, C.scum); } // scum
+      if (b.riverTone === 'dam' && d < 2.7 && y < 14) cv.set(x, y + FY, d < 1.2 ? C.murk2 : C.murk); // stale water held behind the wall
     }
     // side band under the near edges
     for (let x = 0; x < FW; x++) {
@@ -334,7 +458,7 @@ function buildHexTiles() {
       for (let k = 1; k <= BAND; k++) if (!inFace(x, yb + k)) cv.set(x, yb + k + FY, x === INSET[FH - 1] && k === 1 ? cols[1] : cols[k - 1]);
     }
     // sprites, back to front; anything that would stand in water is left out
-    const items = b.items.filter(([, x, y]) => !W.keepOut(x, y)).sort((a, c) => a[2] - c[2]);
+    const items = b.items.filter(([k, x, y]) => WET.has(k) || !W.keepOut(x, y)).sort((a, c) => a[2] - c[2]);
     const placed = [];
     let overhang = 0;
     items.forEach(([k, x, y, p]) => {
@@ -351,6 +475,10 @@ function buildHexTiles() {
       placed.push({ k, x, y, margin: margin(x, y) });
       if (k === 'bush' && id === 'grove') [[x - 1, y - 2], [x + 2, y - 1]].forEach(([bx, by]) => cv.set(bx, by + FY, C.rose)); // berries
     });
+    if (id === 'mine') { // rot seeps out of the adit and down the slope
+      const px0 = b.tuftsAt ? FW - 1 - 21 : 21;
+      for (let y = 20; y < FH; y++) { const w = y < 23 ? 3 : 2, x0 = px0 - 1 + Math.round(Math.sin(y / 2) * 0.8); for (let i = 0; i < w; i++) if (inFace(x0 + i, y) && !ring(x0 + i, y)) cv.set(x0 + i, y + FY, i === 0 ? C.rot0 : C.rot1); }
+    }
     const loneBefore = orphans(cv, ACCENTS);
     cleanup(cv, ACCENTS);
     return { cv, placed, loneBefore, overhang };
@@ -407,7 +535,7 @@ function buildHexTiles() {
     P.forEach(([c, r], i) => {
       const dirs = [];
       if (i > 0) dirs.push(dirTo(c, r, ...P[i - 1]));
-      else { const src = NB(c, r).find(([x, y]) => byKey.get(`${x},${y}`)?.b === 'mountains'); if (src) dirs.push(dirTo(c, r, ...src)); }
+      else { const src = NB(c, r).find(([x, y]) => ['mountains', 'mine'].includes(byKey.get(`${x},${y}`)?.b)); if (src) dirs.push(dirTo(c, r, ...src)); }
       if (i < P.length - 1) dirs.push(dirTo(c, r, ...P[i + 1]));
       else { const m = NB(c, r).find(([x, y]) => byKey.get(`${x},${y}`)?.b === 'lake'); if (m) dirs.push(dirTo(c, r, ...m)); }
       ctx.set(`${c},${r}`, { river: dirs.filter(Boolean) });

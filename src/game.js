@@ -230,55 +230,23 @@
   const memo = new Map();
   const once = (k, f) => { if (!memo.has(k)) memo.set(k, f()); return memo.get(k); };
   const fade = (h, k) => once(`f${h}${k}`, () => { const [r, g, b] = rgb(h), l = r * 0.3 + g * 0.59 + b * 0.11; return hex([r + (l * 1.04 + 10 - r) * k, g + (l * 0.98 + 2 - g) * k, b + (l * 0.86 - 8 - b) * k]); });
-  const mix = (h, h2, k) => once(`m${h}${h2}${k}`, () => { const a = rgb(h), b = rgb(h2); return hex(a.map((v, i) => v + (b[i] - v) * k)); });
-  const WATER2 = '#4b86c9', ROT = '#4a3b55', ROT_HI = '#6b5a7a';
-  const GREENS = (grass, lime, leaf, pine, flower) => ({ [C.grass]: grass, [C.lime]: lime, [C.leaf]: leaf, [C.pine]: pine, [C.glow]: flower, [C.rose]: flower, [C.sage]: lime });
-  const GROUND = { dust: GREENS(C.sand1, C.clay, C.clay, C.soil, C.sand0), poor: GREENS(C.clay, C.sand1, C.soil, C.bark, C.sand1) };
-  const RIVER_LOOK = {
-    dirty: { ...GREENS(C.olive, C.olive, C.olive2, C.pine, C.clay), [C.sky]: C.murk, [WATER2]: C.murk2, [C.mist]: C.sage },
-    dry: { ...GREENS(C.clay, C.sand1, C.soil, C.bark, C.clay), [C.sky]: C.sand1, [WATER2]: C.clay, [C.mist]: C.stone },
-    dam: GREENS(C.clay, C.sand1, C.soil, C.bark, C.clay),
-  };
-  const MARSH_LOOK = { ...GREENS(C.clay, C.sand1, C.soil, C.bark, C.clay), [C.murk]: C.bark, [C.murk2]: '#2a1e22', [C.olive]: C.soil, [C.olive2]: C.bark };
-  const STUMPS = [[8, 7], [16, 6], [23, 8], [6, 14], [14, 13], [22, 15], [10, 20], [19, 21]];
-  const LOGS = [[6, 9, 7], [16, 13, 6], [8, 19, 6], [18, 21, 7]];
-  const CRACKS = [[[6, 10], [7, 10], [8, 11], [9, 12], [9, 13], [11, 14]], [[18, 6], [19, 7], [20, 8], [22, 8]], [[15, 18], [16, 19], [17, 20], [16, 21], [17, 22], [19, 23]], [[23, 14], [24, 15], [25, 16], [27, 17]]];
-  const lookOf = (t) => (t.kind === 'land' ? (t.st === 'forest' ? (TREES.has(t.wild) ? t.wild : 'pines') : t.st === 'grass' && t.wild === 'meadow' ? 'meadow' : 'grass')
-    : t.kind === 'river' ? 'river' : t.kind === 'marsh' ? 'swamp' : t.kind === 'mine' ? 'mountains' : t.b0);
-  function paintTile(t, v, ctx) {
-    const look = lookOf(t), cv = X.cloverTile(look, v, ctx).cv, orig = cv.px.slice();
-    const at = (x, y, c) => cv.set(x, y + X.FY, c);
-    const recolor = (map) => { cv.px = cv.px.map((c) => c && (map[c] || c)); };
-    let k = 0;
-    if (t.kind === 'land' && (t.st === 'dust' || t.st === 'bare' || t.st === 'rot')) {
-      recolor(t.st === 'bare' ? GROUND.poor : GROUND.dust);
-      if (t.st !== 'bare') CRACKS.forEach((line) => line.forEach(([x, y]) => at(x, y, C.soil)));
-      if (t.d0 === 'U' && key(t.c, t.r) === HOUSE) { // the settlers' farmhouse, roof fallen in
-        for (let x = 11; x < 20; x++) for (let y = 11; y < 17; y++) at(x, y, y === 16 ? C.ink : x === 11 || x === 19 ? C.ink : C.pale);
-        for (let x = 12; x < 17; x++) at(x, 10 - Math.min(x - 12, 16 - x), C.bark);
-      }
-      if (t.debris === 'stumps') STUMPS.forEach(([x, y]) => { at(x, y, C.clay); at(x + 1, y, C.sand0); at(x + 2, y, C.clay); at(x, y + 1, C.soil); at(x + 1, y + 1, C.soil); at(x + 2, y + 1, C.bark); at(x, y + 2, C.bark); at(x + 1, y + 2, C.bark); at(x + 2, y + 2, C.ink); });
-      if (t.debris === 'dead') {
-        LOGS.forEach(([x, y, n]) => { for (let i = 0; i < n; i++) { at(x + i, y, C.pale); at(x + i, y + 1, C.stone); at(x + i, y + 2, C.ink); } at(x + n, y, C.ink); at(x + n, y + 1, C.ink); });
-        for (let y = -4; y < 12; y++) { at(23, y, C.pale); at(24, y, C.stone); }
-      }
-      k = t.st === 'bare' ? (t.debris === 'dead' ? 0.6 : 0.4) : 0.62;
-    } else if (t.kind === 'river' && t.river !== 'clean') {
-      recolor(RIVER_LOOK[t.river]); k = 0.55;
-      if (t.river === 'dry') for (let y = 0; y < X.FH; y++) for (let x = 0; x < X.FW; x++) { if (orig[(y + X.FY) * cv.w + x] === C.sky && (x * 7 + y * 3) % 13 === 0) at(x, y, C.pale); }
-      if (t.river === 'dam') {
-        for (let y = 0; y < X.FH; y++) for (let x = 0; x < X.FW; x++) { const o = orig[(y + X.FY) * cv.w + x]; if (o === C.sky || o === WATER2 || o === C.mist) at(x, y, y < 12 ? (o === WATER2 ? C.murk2 : C.murk) : o === WATER2 ? C.clay : C.sand1); }
-        for (let x = 2; x < 30; x++) if (X.inFace(x, 13)) { at(x, 12, C.ink); at(x, 13, C.clay); at(x, 14, C.soil); at(x, 15, C.ink); }
-        for (const p0 of [6, 15, 24]) for (let y = 10; y < 16; y++) { at(p0, y, C.pale); at(p0 + 1, y, C.stone); }
-      }
-    } else if (t.kind === 'marsh' && t.marsh !== 'healed') { recolor(MARSH_LOOK); k = 0.6; }
-    else if (t.kind === 'mine') {
-      k = 0.45;
-      for (let y = 10; y < 17; y++) for (let x = 13; x < 20; x++) at(x, y, x === 13 || x === 19 || y === 10 ? C.clay : C.ink);
-      for (let y = 17; y < 27; y++) { const w = Math.max(1, 4 - Math.floor((y - 17) / 3)); for (let x = 16 - (w >> 1); x < 16 - (w >> 1) + w; x++) if (X.inFace(x, y)) at(x, y, (x + y) % 2 ? ROT : ROT_HI); }
-    } else if (t.kind === 'scenery') k = 0.5;
-    if (k > 0) cv.px = cv.px.map((c) => c && fade(c, Math.round(k * 20) / 20));
-    if (t.st === 'rot') cv.px = cv.px.map((c, i) => { if (!c) return c; const x = i % cv.w, y = Math.floor(i / cv.w); return (x * 3 + y * 5) % 7 === 0 ? ROT_HI : mix(c, ROT, 0.6); });
+  // Each state is its own hand-drawn tile in tiles.js (the ruins); nothing is recolored. Only the scenery around the
+  // valley (peaks, hills, boulders) is washed out, and it regains its color as the valley turns green.
+  function lookOf(t) {
+    if (t.kind === 'land') {
+      if (t.st === 'rot') return 'rot';
+      if (t.st === 'dust') return key(t.c, t.r) === HOUSE ? 'farmruin' : 'dust';
+      if (t.st === 'bare') return t.debris === 'stumps' ? 'stumps' : t.debris === 'dead' ? 'deadwood' : 'bare';
+      return t.st === 'forest' ? (TREES.has(t.wild) ? t.wild : 'pines') : t.wild === 'meadow' ? 'meadow' : 'grass';
+    }
+    if (t.kind === 'river') return t.st === 'rot' ? 'rotRiver' : { clean: 'river', dirty: 'riverDirty', dry: 'riverDry', dam: 'dam' }[t.river];
+    if (t.kind === 'marsh') return t.marsh === 'healed' ? 'swamp' : 'marshDry';
+    if (t.kind === 'mine') return 'mine';
+    return t.b0;
+  }
+  function paintTile(t, v, ctx, wash) {
+    const cv = X.cloverTile(lookOf(t), v, ctx).cv;
+    if (t.kind === 'scenery' && wash > 0) cv.px = cv.px.map((c) => c && fade(c, wash));
     return cv;
   }
 
@@ -292,11 +260,12 @@
   const now = () => performance.now() / 1000;
   function redraw() {
     dirty = false;
+    const wash = Math.round(Math.max(0, 0.55 * (1 - greenShare() / GREEN_GOAL)) * 20) / 20;
     const ctxs = X.contexts({ cells: cells.map((t) => ({ c: t.c, r: t.r, b: lookOf(t) })), river: RIVER });
     const px = new Array(MW * MH).fill(null), owner = new Int16Array(MW * MH).fill(-1);
     const order = cells.map((t, i) => ({ t, i, ...X.at(t.c, t.r) })).sort((a, b) => a.y - b.y || a.t.c - b.t.c);
     order.forEach(({ t, i, x: ox, y: oy }) => {
-      const img = paintTile(t, (t.c * 5 + t.r * 3) % 2, ctxs.get(key(t.c, t.r)));
+      const img = paintTile(t, (t.c * 5 + t.r * 3) % 2, ctxs.get(key(t.c, t.r)), wash);
       for (let y = 0; y < img.h; y++) for (let x = 0; x < img.w; x++) { const c = img.px[y * img.w + x]; if (c && ox + x < MW && oy + y < MH) px[(oy + y) * MW + ox + x] = c; }
       for (let y = 0; y < X.FH; y++) for (let x = 0; x < X.FW; x++) if (X.inFace(x, y)) owner[(oy + X.FY + y) * MW + ox + x] = i;
     });
