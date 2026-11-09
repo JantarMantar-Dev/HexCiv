@@ -98,6 +98,25 @@ new biomes. Shadows always shift toward blue or teal, never toward black or grey
 | Mountains | `mountains` | 4 | +3 | snow-capped peak, small peak, rocks ×2 |
 | Beach | `beach` | 1 | +0 | shore water, driftwood, shells ×3, rock, tuft |
 
+## Ruins
+
+The game shows each damaged state as its own tile, never a recolour. Ruins share the grid, light and outline rules;
+they add the ramps `loam0/loam1` (tilled soil), `ash/ash2` (weathered dead wood), `rot0`–`rot3` (the rot), `dun0`–`dun2`
+(dried marsh) and `scum` (dirty water).
+
+| Ruin | Id | Ground | Sprites |
+|---|---|---|---|
+| Dust | `dust` | dried mud plates: crack, lit rim below it | pebbles |
+| Bare soil | `bare` | ploughed rows that bow across the hex | pebble |
+| Stump field | `stumps` | bare | large and small stumps with rings, dead log |
+| Dead trees | `deadwood` | bare | grey snags, dead logs, stump |
+| Old farmhouse | `farmruin` | dust | roofless stone house |
+| Rot | `rot` | rot with ooze pools | bubbles |
+| Rotten / dirty / dry river | `rotRiver`, `riverDirty`, `riverDry` | rot, sick grass, dust | dead reeds, pebbles; scum or cracks in the bed |
+| Old dam | `dam` | dust | plank dam wall, stale water behind it |
+| Drained marsh | `marshDry` | dried marsh with cracked mud pools | dead trees and reeds |
+| Leaking mine | `mine` | scree | peak, timber adit, rot seeping down the slope |
+
 ## Checks (`node tools/check.js`)
 
 | Check | Rule |

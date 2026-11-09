@@ -13,6 +13,7 @@ No build step and no dependencies beyond Node (for the tools).
 | Do this | Command |
 |---|---|
 | Play the prototype | Open `play.html` in a browser |
+| Play v6 before the art rebuild (frozen) | Open `archive/10-prototype-v6/play.html` |
 | Play prototype v5 (frozen) | Open `archive/9-prototype-v5/play.html` |
 | Play prototype v4 (frozen) | Open `archive/8-prototype-v4/play.html` |
 | Play prototype v3 (frozen) | Open `archive/7-prototype-v3/play.html` |
@@ -32,6 +33,7 @@ play.html               Prototype v6, Regrow: a place-and-transform puzzle, rest
 src/game.js             Prototype game logic, the ruined map and its art, and the HUD
 src/icons.js            Pixel-art HUD and tech tree icons
 art/tiles/*.png         One PNG per terrain, 32x48 at 1x
+art/ruins/*.png         The ruined tiles the game shows until a hex heals (both variants)
 art/tilesheet.png/json  All terrains in one strip, with the order and cell metrics
 art/maps/*.png          The composed maps at 1x
 tools/check.js          Art checks: tessellation, lone pixels, sprite placement, river continuity

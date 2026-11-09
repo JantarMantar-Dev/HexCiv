@@ -66,3 +66,21 @@ removed trades and began to unfold the valley in chapters.
 
 A chapter goal line and a glowing goal hex with a bobbing arrow, progress bars under hexes, twice-size stall
 markers and idle "z z" bubbles. Frozen when version 6 turned the game into a place-and-transform puzzle.
+
+## 11. Prototype v6 (`archive/10-prototype-v6`)
+
+Regrow, the place-and-transform puzzle, with the v2 ruin art: recoloured, faded healthy tiles and small procedural
+restorers. Frozen (git tag `art-v1-before`) as the "before" for the art rebuild.
+
+## 12. Art rebuild (`src/`, v7)
+
+Every part of the game re-drawn to the house rules instead of recoloured:
+
+1. **Ruin tiles.** Twelve hand-drawn ruins in `tiles.js` (`ruin: true`): cracked dust with lit plate rims, ploughed
+   bare soil, stump field, dead trees, the old farmhouse, rot with ooze pools, rotten, dirty and dry river, the
+   old dam, drained marsh and the leaking mine. See `docs/images/ruins@4x.png`.
+2. **Restorers.** Grid sprites with soft and hard outlines and contact shadows; only the moving parts (rotor,
+   spray, smoke, rushing water, gate wheel) are drawn live.
+3. **Scene.** Banded pixel sky, parallax clouds, the lake running on below the valley, a drop shadow under the map,
+   and the scenery around the valley regaining its colour as the land turns green.
+4. **HUD.** 12×12 pixel icons replace every emoji.
