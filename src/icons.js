@@ -371,6 +371,15 @@ function buildHudIcons() {
       '..kssssssk..',
       'mmmkkkkkkmmm',
     ],
+    // ---- Regrow HUD ----
+    leaf: ['.......kkk..', '.....kkLLLk.', '....kLLLLGk.', '...kLLLLGGk.', '..kLLeLGGGk.', '..kLLLGGGk..', '.kLLLGGGk...', '.kLLGGGk....', '.kLGGkk.....', '.kGkk.......', 'kdk.........', 'kk..........'],
+    hint: ['....kkkk....', '...kYYYYk...', '..kYeYYYYk..', '..kYeYYYYk..', '..kYYYYYyk..', '..kYYYYYyk..', '...kYYYyk...', '....kppk....', '....knnk....', '....kppk....', '.....kk.....', '............'],
+    undo: ['............', '...k........', '..kek.......', '.keeekkkk...', 'keeeeeeeek..', '.keeekkkeek.', '..kek...kek.', '...k....kek.', '.......keek.', '....kkkeek..', '....keeek...', '....kkkk....'],
+    restart: ['...kkkkk....', '..keeeeek.k.', '.keekkkeekek', 'kek....keeek', 'kek...keeeek', 'kek....kkkk.', 'kek.........', 'kek.....kkk.', '.keek..keek.', '..keeeeeek..', '...kkkkkk...', '............'],
+    back: ['............', '.....kk.....', '....kek.....', '...keek.....', '..keeekkkkk.', '.keeeeeeeek.', '.keeeeeeeek.', '..keeekkkkk.', '...keek.....', '....kek.....', '.....kk.....', '............'],
+    help: ['...kkkkk....', '..keeeeek...', '.keekkkeek..', '.kek...keek.', '..k...keek..', '.....keek...', '....keek....', '....kek.....', '.....k......', '....kkk.....', '....kek.....', '....kkk.....'],
+    check: ['............', '..........kk', '.........kLk', '........kLk.', '.kk....kLk..', 'kLLk..kLk...', '.kLLkkLk....', '..kLLLk.....', '...kLk......', '....k.......', '............', '............'],
+    ring: ['............', '....kkkk....', '..kkppppkk..', '..kp....pk..', '.kp......pk.', '.kp......pk.', '.kp......pk.', '.kp......pk.', '..kp....pk..', '..kkppppkk..', '....kkkk....', '............'],
   };
   const cache = {};
   return (name) => {

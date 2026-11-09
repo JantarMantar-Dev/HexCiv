@@ -5,7 +5,8 @@
 // water gate heals the marsh; opening the old dam refills the dry riverbed. Meet the four goals, then recycle every
 // restorer to leave the valley as if no one had been there. v1 to v5 are in archive/.
 (() => {
-  const X = buildHexTiles(), B = X.BIOMES, C = X.C;
+  const X = buildHexTiles(), B = X.BIOMES, C = X.C, hudIcon = buildHudIcons();
+  const leafImg = new Image(); leafImg.src = hudIcon('leaf');
 
   // ---------- the restorers ----------
   // cost in leaves; `on` says where it may stand, `need` what must be near it. PAY is what each healed hex pays back.
@@ -186,7 +187,7 @@
     const g = now(), c0 = center(t);
     e.out.forEach(([n]) => wave.push({ n, at: g + 0.15 * dist(n, t) }));
     e.out.forEach(([n, ch]) => apply(n, ch));
-    pops.push({ x: c0.x, y: c0.y - 16, text: `${e.gain - k.cost >= 0 ? '+' : ''}${e.gain - k.cost} 🍃`, color: e.gain >= k.cost ? '#c9e05a' : '#e8587d', t: 0 });
+    pops.push({ x: c0.x, y: c0.y - 16, text: `${e.gain - k.cost >= 0 ? '+' : ''}${e.gain - k.cost}`, leaf: true, color: e.gain >= k.cost ? '#c9e05a' : '#e8587d', t: 0 });
     track(`place ${id} ${t.c},${t.r} +${e.gain}`);
     afterChange();
     return true;
@@ -195,7 +196,7 @@
     if (!t || !t.b) return false;
     S.undo.push(snap());
     const back = Math.floor(TOOLS[t.b].cost / 2); S.leaves += back; t.b = null; S.built--;
-    const c0 = center(t); pops.push({ x: c0.x, y: c0.y - 16, text: `+${back} 🍃`, color: '#c9e05a', t: 0 });
+    const c0 = center(t); pops.push({ x: c0.x, y: c0.y - 16, text: `+${back}`, leaf: true, color: '#c9e05a', t: 0 });
     track(`recycle ${t.c},${t.r}`);
     afterChange();
     return true;
@@ -281,7 +282,43 @@
       if (isLand(t) && t.st === 'forest' && ph % 3 === 0) anim.push({ kind: 'bird', x: p.x, y: p.y - 14, ph });
       if (isLand(t) && t.st === 'grass' && ph % 3 === 1) anim.push({ kind: 'bee', x: p.x, y: p.y, ph });
     });
+    shadow.width = MW; shadow.height = MH; const shx = shadow.getContext('2d');
+    shx.drawImage(base, 0, 0); shx.globalCompositeOperation = 'source-in'; shx.fillStyle = 'rgba(26,52,69,0.28)'; shx.fillRect(0, 0, MW, MH);
     fit();
+  }
+  // ---------- the sky around the valley ----------
+  // A banded sky (pixel steps, not a smooth gradient) with slow pixel clouds, and the lake running on below the valley.
+  const shadow = document.createElement('canvas');
+  const CLOUD = [
+    ['.......HHHH...........', '.....HHHHHHHH..HHH....', '...HHHHHHHHHHHHHHHH...', '.HHHHHHHHHHHHHHHHHHHH.', 'HLHHHHHHHHHHHHHHHHHHHL', 'LLLLHHHHHLLLLLHHHLLLLL', '.LLLLLLLLLLLLLLLLLLLL.'],
+    ['....HHH......', '..HHHHHHH....', '.HHHHHHHHHHH.', 'HHHHHHHHHHHHH', 'LLLLHHHLLLLLL', '.LLLLLLLLLLL.'],
+    ['..........HHHH.........', '...HHH..HHHHHHHH.......', '.HHHHHHHHHHHHHHHHHH....', 'HHHHHHHHHHHHHHHHHHHHHH.', 'LLHHHHHLLLLHHHHHHLLLLLL', '.LLLLLLLLLLLLLLLLLLLLL.'],
+  ].map((rows) => { const c = document.createElement('canvas'); c.width = rows[0].length; c.height = rows.length; const g2 = c.getContext('2d');
+    rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== '.') { g2.fillStyle = ch === 'H' ? '#f4f6ea' : '#d3e6f2'; g2.fillRect(x, y, 1, 1); } })); return c; });
+  const SKY = ['#8ec3ea', '#99cbee', '#a5d2f1', '#b1d9f3', '#bde0f5', '#c9e7f7'];
+  const DRIFT = [[0, 0.04, 0.0], [1, 0.2, 0.4], [2, 0.42, 0.15], [1, 0.6, 0.7], [0, 0.3, 0.55], [2, 0.1, 0.85], [1, 0.5, 0.3]];
+  function backdrop(g, k2, ox, oy) {
+    const H = canvas.height, band = Math.ceil(H / SKY.length);
+    SKY.forEach((c, i) => { cx.fillStyle = c; cx.fillRect(0, i * band, canvas.width, band + 1); });
+    clouds(g, k2);
+    // the lake runs on past the valley to the bottom of the screen: deep water with slow light streaks
+    const sy = Math.round(oy + (X.FY + 28 * (ROWS - 1) + 8) * k2);
+    cx.fillStyle = '#5f9edd'; cx.fillRect(0, sy, canvas.width, H - sy);
+    cx.fillStyle = '#4b86c9'; cx.fillRect(0, sy + 6 * k2, canvas.width, H - sy);
+    cx.fillStyle = '#a9d5f0';
+    for (let i = 0; i < 40; i++) { const wx = ((i * 97.3 + g * (4 + (i % 3))) % (canvas.width / k2 + 20)) - 10, wy = 3 + ((i * 37) % 40);
+      if (sy + wy * k2 < H && Math.sin(g * 1.3 + i) > -0.3) cx.fillRect(Math.round(wx) * k2, sy + wy * k2, (2 + (i % 3)) * k2, k2); }
+  }
+  function clouds(g, k2) {
+    cx.imageSmoothingEnabled = false;
+    const span = canvas.width / k2 + 60; // in map pixels
+    DRIFT.forEach(([n, y, ph], i) => {
+            const c = CLOUD[n], sp = 1 + (i % 2) * 0.6, x = ((ph * span + g * sp) % span) - 30;
+      const z = k2 * 2; // far clouds are drawn with bigger pixels, a cheap parallax
+      cx.globalAlpha = 0.95;
+      cx.drawImage(c, Math.round(x * k2 / z) * z, Math.round(y * 0.55 * canvas.height / z) * z, c.width * z, c.height * z);
+    });
+    cx.globalAlpha = 1;
   }
   function fit() {
     if (!R) return;
@@ -452,7 +489,12 @@
   const ring = hexShape('#f4f6ea', true), goldEdge = hexShape('#e6c35a', true), badEdge = hexShape('#e8587d', true);
   const fillOf = { loosen: hexShape('#e2bd78', false), clear: hexShape('#e2bd78', false), scrub: hexShape('#f39a52', false), grass: hexShape('#9bcb3e', false), forest: hexShape('#2f7d46', false), river: hexShape('#5f9edd', false), marsh: hexShape('#5f9edd', false) };
   const rangeHex = hexShape('rgba(244,246,234,0.16)', false), glowHex = hexShape('#f4e98a', false);
-  function label(text, x, y, color) { cx.lineWidth = 3 * dpr; cx.strokeStyle = '#141d26'; cx.strokeText(text, x, y); cx.fillStyle = color; cx.fillText(text, x, y); }
+  // a floating number, outlined in ink; with `leaf` a pixel leaf follows it
+  function label(text, x, y, color, leaf = true) {
+    const z = Math.max(2, Math.round(scale)) * dpr, w = leaf ? 12 * z + 3 * dpr : 0, tw = cx.measureText(text).width, x0 = x - w / 2;
+    cx.lineWidth = 3 * dpr; cx.strokeStyle = '#141d26'; cx.strokeText(text, x0, y); cx.fillStyle = color; cx.fillText(text, x0, y);
+    if (leaf && leafImg.complete) cx.drawImage(leafImg, Math.round(x0 + tw / 2 + 3 * dpr), Math.round(y - 11 * z), 12 * z, 12 * z);
+  }
   let preview = null;
   function render(g) {
     if (dirty) redraw();
@@ -487,14 +529,14 @@
     }
     cells.filter((t) => t.b).sort((a, b) => a.r - b.r || a.c - b.c).forEach((t) => { const c = center(t); drawTool(t.b, c.x, c.y + 4, g + t.c); });
     const k2 = scale * dpr, ox = offX * dpr, oy = offY * dpr;
-    cx.fillStyle = '#a9d5f0'; cx.fillRect(0, 0, canvas.width, canvas.height);
-    cx.imageSmoothingEnabled = false;
+    backdrop(g, k2, ox, oy);
+    cx.drawImage(shadow, ox + 3 * k2, oy + 5 * k2, R.w * k2, R.h * k2); // the valley floats over the haze
     cx.drawImage(scene, ox, oy, R.w * k2, R.h * k2);
     cx.textAlign = 'center'; cx.font = `700 ${Math.round(Math.max(14, 7 * scale) * dpr)}px "Pixelify Sans", monospace`;
-    if (preview && preview.gain !== undefined) { const c = center(hover); label(`+${preview.gain} 🍃`, ox + c.x * k2, oy + (c.y - 26) * k2, preview.gain >= preview.cost ? '#c9e05a' : '#f4e98a'); }
+    if (preview && preview.gain !== undefined) { const c = center(hover); label(`+${preview.gain}`, ox + c.x * k2, oy + (c.y - 26) * k2, preview.gain >= preview.cost ? '#c9e05a' : '#f4e98a'); }
     for (let i = pops.length - 1; i >= 0; i--) {
       const f = pops[i]; f.t += 1 / 60; if (f.t > 1.4) { pops.splice(i, 1); continue; }
-      cx.globalAlpha = Math.max(0, 1 - f.t / 1.4); label(f.text, ox + f.x * k2, oy + (f.y - f.t * 14) * k2, f.color); cx.globalAlpha = 1;
+      cx.globalAlpha = Math.max(0, 1 - f.t / 1.4); label(f.text, ox + f.x * k2, oy + (f.y - f.t * 14) * k2, f.color, f.leaf); cx.globalAlpha = 1;
     }
   }
 
@@ -543,10 +585,12 @@
 
   // ---------- HUD ----------
   function $(id) { return document.getElementById(id); }
+  const mark = (ok) => `<img class="ic" src="${hudIcon(ok ? 'check' : 'ring')}" alt="${ok ? 'done' : 'to do'}">`;
+  document.querySelectorAll('[data-ic]').forEach((img) => { img.src = hudIcon(img.dataset.ic); });
   const iconOf = (id) => once(`ic${id}`, () => { const c = document.createElement('canvas'); c.width = 26; c.height = 30; const g = c.getContext('2d'); drawTool(id, 13, 25, 0.3, (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); }); return c.toDataURL(); });
   $('tools').innerHTML = [...ORDER, 'recycle'].map((id, i) => {
     const k = TOOLS[id], tipText = k ? k.text : 'Take a restorer away and get half its leaves back. What it healed stays healed.';
-    return `<button class="tool" data-tool="${id}" title="${tipText.replace(/"/g, '&quot;')}"><img alt="" src="${iconOf(id)}"><span>${k ? k.name : 'Recycle'}</span><em>${k ? `${k.cost} 🍃` : '+½'}</em>${i < ORDER.length ? `<kbd>${i + 1}</kbd>` : ''}</button>`;
+    return `<button class="tool" data-tool="${id}" title="${tipText.replace(/"/g, '&quot;')}"><img alt="" src="${iconOf(id)}"><span>${k ? k.name : 'Recycle'}</span><em>${k ? `${k.cost} <img class="ic sm" src="${hudIcon('leaf')}" alt="leaves">` : '+½'}</em>${i < ORDER.length ? `<kbd>${i + 1}</kbd>` : ''}</button>`;
   }).join('');
   $('tools').addEventListener('click', (e) => { const b = e.target.closest('[data-tool]'); if (b) { tool = b.dataset.tool; lastKey = ''; track(`tool ${tool}`); } });
   $('undoBtn').addEventListener('click', () => { undo(); track('undo'); });
@@ -564,8 +608,8 @@
     if (key2 === lastKey) return;
     lastKey = key2;
     $('leaves').textContent = S.leaves;
-    $('goals').innerHTML = GOALS.map((g) => `<li class="${g.ok() ? 'ok' : ''}">${g.ok() ? '✓' : '○'} ${g.text()}</li>`).join('')
-      + `<li class="${goalsMet() && !S.built ? 'ok' : goalsMet() ? '' : 'later'}">${goalsMet() && !S.built ? '✓' : '○'} Then recycle every restorer${S.built ? ` (${S.built} standing)` : ''}</li>`;
+    $('goals').innerHTML = GOALS.map((g) => `<li class="${g.ok() ? 'ok' : ''}">${mark(g.ok())}${g.text()}</li>`).join('')
+      + `<li class="${goalsMet() && !S.built ? 'ok' : goalsMet() ? '' : 'later'}">${mark(goalsMet() && !S.built)}Then recycle every restorer${S.built ? ` (${S.built} standing)` : ''}</li>`;
     document.querySelectorAll('[data-tool]').forEach((b) => { const id = b.dataset.tool; b.setAttribute('aria-pressed', String(id === tool)); b.classList.toggle('poor', id !== 'recycle' && S.leaves < TOOLS[id].cost); });
     const t = TOOLS[tool];
     $('toolInfo').innerHTML = (tool === 'recycle' ? '<b>Recycle</b> Tap a restorer to take it away for half its leaves back. What it healed stays healed.' : `<b>${t.name}</b> ${t.text}`)

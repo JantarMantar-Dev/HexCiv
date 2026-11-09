@@ -26,6 +26,8 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--sky); 
 body { padding-left: 0; padding-right: 0; }
 canvas#map { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; cursor: pointer; }
 img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; height: 24px; display: block; flex: none; }
+img.ic.sm { width: 12px; height: 12px; display: inline-block; vertical-align: -1px; }
+.goals img.ic { width: 12px; height: 12px; display: inline-block; vertical-align: -1px; margin-right: 4px; }
 .panel { background: var(--deep); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--deep2), inset -2px -2px 0 var(--deep0), 0 3px 0 rgba(20, 29, 38, .45); }
 .btn { font-family: var(--display); font-size: 16px; color: var(--cream); background: var(--wood); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--wood-hi), inset -2px -2px 0 var(--wood-lo), 0 3px 0 rgba(20, 29, 38, .45); padding: 8px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
 .btn:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 2px 2px 0 var(--wood-lo), inset -2px -2px 0 var(--wood-hi); }
@@ -104,15 +106,15 @@ img.ic { image-rendering: pixelated; image-rendering: crisp-edges; width: 24px; 
 
 <div class="hud" id="hud">
   <div class="panel score">
-    <div class="leaves"><b id="leaves">0</b><small>🍃 leaves</small></div>
+    <div class="leaves"><b id="leaves">0</b><small><img class="ic sm" data-ic="leaf" alt=""> leaves</small></div>
     <ul class="goals" id="goals"></ul>
   </div>
   <div class="side">
-    <button class="btn" id="menuBtn" aria-label="Menu">◀ <span class="lbl">Menu</span></button>
-    <button class="btn" id="helpBtn" aria-label="How to play">? <span class="lbl">How to play</span></button>
-    <button class="btn" id="undoBtn" aria-label="Undo">↶ <span class="lbl">Undo</span></button>
-    <button class="btn go" id="hintBtn" aria-label="Hint">💡 <span class="lbl">Hint</span></button>
-    <button class="btn" id="restartBtn" aria-label="Start again">⟲ <span class="lbl">Start again</span></button>
+    <button class="btn" id="menuBtn" aria-label="Menu"><img class="ic" data-ic="back" alt=""> <span class="lbl">Menu</span></button>
+    <button class="btn" id="helpBtn" aria-label="How to play"><img class="ic" data-ic="help" alt=""> <span class="lbl">How to play</span></button>
+    <button class="btn" id="undoBtn" aria-label="Undo"><img class="ic" data-ic="undo" alt=""> <span class="lbl">Undo</span></button>
+    <button class="btn go" id="hintBtn" aria-label="Hint"><img class="ic" data-ic="hint" alt=""> <span class="lbl">Hint</span></button>
+    <button class="btn" id="restartBtn" aria-label="Start again"><img class="ic" data-ic="restart" alt=""> <span class="lbl">Start again</span></button>
     <button class="btn" id="sendBtn" hidden aria-label="Send this game to Claude">🐞 <span class="lbl">Send to Claude</span></button>
   </div>
   <div class="panel msg" id="msg" hidden aria-live="polite"></div>

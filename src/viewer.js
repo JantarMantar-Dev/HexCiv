@@ -13,7 +13,7 @@
     }
     cx.putImageData(im, 0, 0);
   }
-  const N = X.BIOMES;
+  const N = X.BIOMES, IDS = Object.keys(N).filter((id) => !N[id].ruin); // the ruins are shown in the game, not here
   const cost = (b) => (N[b].move === 0 ? 'impassable' : `${N[b].move}`);
 
   // ---- map viewer ----
@@ -49,9 +49,9 @@
 
   // ---- tile set ----
   const sheet = document.getElementById('sheet');
-  sheet.innerHTML = Object.keys(N).map((id) => `<li><div class="pair"><canvas aria-label="${N[id].name}"></canvas></div><b>${N[id].name}</b><small>move ${cost(id)} · defense +${N[id].def}</small></li>`).join('');
+  sheet.innerHTML = IDS.map((id) => `<li><div class="pair"><canvas aria-label="${N[id].name}"></canvas></div><b>${N[id].name}</b><small>move ${cost(id)} · defense +${N[id].def}</small></li>`).join('');
   sheet.querySelectorAll('li').forEach((li, k) => {
-    const id = Object.keys(N)[k], c = X.cloverTile(id).cv;
+    const id = IDS[k], c = X.cloverTile(id).cv;
     paint(li.querySelector('canvas'), c.w, c.h, c.px, 4, null);
   });
 
