@@ -294,30 +294,153 @@
     offX = Math.round((innerWidth - R.w * scale) / 2); offY = top + Math.round(Math.max(0, (vh - R.h * scale) / 2));
   }
   const px = (x, y, w, h, c) => { sx.fillStyle = c; sx.fillRect(Math.round(x), Math.round(y), w, h); };
+  // ---------- restorers ----------
+  // Each machine is a hand-drawn grid like the tile sprites (light from the upper left, soft outline on the lit side,
+  // hard outline on the shaded side). Only the moving parts (rotor, spray, smoke, rushing water) are drawn live.
+  const P = { ...C, loam: '#5e3f30', fire: '#f39a52', flame: '#ffd36b', steel: '#7d8ca8' };
+  const ROBOT = { // rows, legend, base point (bx, by), outline [soft, hard]
+    pump: { bx: 6, by: 17, out: [P.bark, P.ink], leg: { T: P.clay, B: P.soil, D: P.bark, S: P.pale, s: P.stone, W: P.sky, w: P.deep, V: P.rose, v: '#a03a4f' }, rows: [
+      '......DD...VVv',
+      '......TB..VVv.',
+      '......TB.VVv..',
+      '.....T.B......',
+      '.....T.B......',
+      '.....TBB......',
+      '....T..B......',
+      '....T...B.....',
+      '....TBBBB.....',
+      '...T....B.....',
+      '...T.....B....',
+      '..TBBBBBBB....',
+      '..T.......B...',
+      '.T........B...',
+      'SSSSSSSSSSSSs.',
+      'SWWWWWWWWWWWs.',
+      'SWwwwwwwwwwWs.',
+      'ssssssssssss..'] },
+    sprinkler: { bx: 5, by: 10, out: [P.stone, P.ink], leg: { H: P.cloud, L: P.pale, M: P.steel, D: P.stone, Y: P.glow }, rows: [
+      '....LLM....',
+      '...LHLMD...',
+      '....LMD....',
+      '....LMD....',
+      '....LMD....',
+      '..LLLMMDD..',
+      '.LHLLLMMMD.',
+      '.LLYLLYMMD.',
+      '.LLLLLMMMD.',
+      '..DDDDDDD..',
+      '...........'] },
+    planter: { bx: 7, by: 9, out: [P.bark, P.ink], leg: { g: P.lime, L: P.grass, M: P.leaf, H: P.loam0, T: P.clay, B: P.soil, s: P.loam, D: P.bark }, rows: [
+      '..g....g....g..',
+      '.gLg..gLg..gLg.',
+      '..LM...LM...LM.',
+      '...M....M....M.',
+      'HHHHHHHHHHHHHHT',
+      'HssssssssssssTB',
+      'TTTTTTTTTTTTTTB',
+      'TBTTTTBTTTTTBTB',
+      'BBBBBBBBBBBBBBD',
+      '.D...........D.'] },
+    scrubber: { bx: 6, by: 12, out: [P.stone, P.ink], leg: { H: P.cloud, L: P.pale, M: P.stone, D: P.deep, K: P.ink, O: P.fire, Y: P.flame, R: P.rose }, rows: [
+      '........LM...',
+      '........LM...',
+      '.......LLMD..',
+      '........LM...',
+      '...LLLLLLMM..',
+      '..LHLLLLLMMD.',
+      '.LHLLLLLLLMMD',
+      '.LLLKKKKKLMMD',
+      '.LLKOOOOOKMMD',
+      '.LLKOYYYOKMMD',
+      '.LLKORYROKMDD',
+      '.MMMMMMMMMMDD',
+      '..DDDDDDDDDD.'] },
+    filter: { bx: 7, by: 10, out: [P.pine, P.ink], leg: { c: P.soil, C: P.bark, L: P.lime, M: P.grass, D: P.leaf, H: P.loam0, T: P.clay, B: P.soil }, rows: [
+      '.c...c..c...c..',
+      '.C.c.C..C.c.C..',
+      '.L.C.L.cL.C.L.c',
+      '.LM.LM.CLMLM.LC',
+      '.LMDLMDLMDLMDLM',
+      '.LMDLMDLMDLMDLM',
+      '.LMDLMDLMDLMDLM',
+      'HHHHHHHHHHHHHHH',
+      'TTTTTTTTTTTTTTB',
+      'B.B....B....B.B',
+      'B.B....B....B.B'] },
+    gate: { bx: 6, by: 13, out: [P.bark, P.ink], leg: { K: P.bark, k: P.soil, S: P.pale, s: P.stone, H: P.loam0, T: P.clay, B: P.soil }, rows: [
+      '....KkK......',
+      '...K.k.K.....',
+      '...kkkkk.....',
+      '...K.k.K.....',
+      '....KkK......',
+      'SS...k....SS.',
+      'Ss...k....Ss.',
+      'SsHHHHHHHHSs.',
+      'SsTTTTTTTBSs.',
+      'SsHHHHHHHHSs.',
+      'SsTTTTTTTBSs.',
+      'SsHHHHHHHHSs.',
+      'SsBBBBBBBBSs.',
+      'ssssssssssss.'] },
+    dam: { bx: 8, by: 7, out: [P.bark, P.ink], leg: { H: P.loam0, T: P.clay, B: P.soil, S: P.pale, s: P.stone }, rows: [
+      '.T............',
+      'HTH.........H.',
+      'TTB.......THTB',
+      'HHH.......HHHB',
+      'TTB........TTB',
+      'BBB.......BBBB',
+      'SSs.......SSSs',
+      'sss........sss'] },
+    recycle: { bx: 6, by: 11, out: [P.pine, P.ink], leg: { L: P.lime, M: P.grass, D: P.leaf }, rows: [
+      '....LLLL.....',
+      '...LMMMML....',
+      '..LM....LL...',
+      '.LM......LM..',
+      '.LM....LLLLLM',
+      '.LM.....LMMD.',
+      'LLLLLM...LD..',
+      '.LMMD......LM',
+      '..LD.......LM',
+      '...........LM',
+      '....LL....LM.',
+      '.....LMMMMD..',
+      '......DDDD...'] },
+  };
+  function gridSprite(r, x, y, put) { // draw a grid sprite so its base point lands on (x, y), outline first
+    const x0 = Math.round(x) - r.bx, y0 = Math.round(y) - r.by, on = (cx2, cy2) => r.rows[cy2] && r.leg[r.rows[cy2][cx2]];
+    const [soft, hard] = r.out;
+    for (let yy = -1; yy <= r.rows.length; yy++) for (let xx = -1; xx <= r.rows[0].length; xx++) {
+      if (on(xx, yy)) continue;
+      if (on(xx, yy - 1) || on(xx - 1, yy)) put(x0 + xx, y0 + yy, 1, 1, hard);
+      else if (soft && (on(xx, yy + 1) || on(xx + 1, yy))) put(x0 + xx, y0 + yy, 1, 1, soft);
+    }
+    r.rows.forEach((row, yy) => [...row].forEach((ch, xx) => { if (r.leg[ch]) put(x0 + xx, y0 + yy, 1, 1, r.leg[ch]); }));
+    return { x0, y0 };
+  }
   // restorers, drawn standing at (x, y); `g` is the clock for the moving parts
   function drawTool(id, x, y, g, put = px) {
-    if (id === 'pump') {
-      put(x, y - 12, 1, 13, '#3f2b31'); put(x - 2, y, 5, 2, '#77513c'); put(x - 1, y - 13, 3, 3, '#f4f6ea');
-      if (Math.floor(g * 6) % 2) { put(x - 5, y - 12, 4, 1, '#f4f6ea'); put(x + 2, y - 12, 4, 1, '#f4f6ea'); put(x, y - 18, 1, 4, '#f4f6ea'); put(x, y - 9, 1, 3, '#dce7ee'); }
-      else { put(x - 4, y - 16, 2, 2, '#f4f6ea'); put(x + 3, y - 16, 2, 2, '#f4f6ea'); put(x - 4, y - 10, 2, 2, '#dce7ee'); put(x + 3, y - 10, 2, 2, '#dce7ee'); }
-    } else if (id === 'sprinkler') {
-      put(x - 2, y - 1, 5, 3, '#5f6e8a'); put(x, y - 6, 1, 5, '#a3b5c4'); put(x - 1, y - 7, 3, 1, '#a3b5c4');
-      for (let i = 0; i < 5; i++) { const a = g * 3 + i * 1.26, r = 3 + ((g * 6 + i) % 4); put(x + Math.round(Math.cos(a) * r), y - 7 + Math.round(Math.sin(a) * r * 0.5), 1, 1, '#a9d5f0'); }
-    } else if (id === 'planter') {
-      put(x - 5, y - 2, 11, 4, '#77513c'); put(x - 5, y + 1, 11, 1, '#3f2b31');
-      for (const d of [-3, 0, 3]) { put(x + d, y - 5, 1, 3, '#2f7d46'); put(x + d - 1, y - 6, 3, 1, '#9bcb3e'); }
-    } else if (id === 'scrubber') {
-      put(x - 3, y - 4, 7, 6, '#5f6e8a'); put(x - 3, y + 1, 7, 1, '#141d26'); put(x + 1, y - 9, 2, 5, '#a3b5c4');
-      for (let i = 0; i < 3; i++) { const f = (g * 0.7 + i / 3) % 1; put(x + 1 + Math.round(Math.sin((f + i) * 6)), y - 10 - f * 10, 2, 2, f < 0.5 ? '#f39a52' : '#a3b5c4'); }
-    } else if (id === 'filter') {
-      for (let i = 0; i < 6; i++) { const h = 4 + (i * 3) % 4; put(x - 5 + i * 2, y - h, 1, h, i % 2 ? '#9bcb3e' : '#2f7d46'); put(x - 5 + i * 2, y - h - 1, 1, 1, '#b57f52'); }
-      put(x - 7, y, 14, 1, '#77513c');
-    } else if (id === 'gate') {
-      put(x - 7, y - 3, 15, 4, '#b57f52'); put(x - 7, y, 15, 1, '#3f2b31'); for (const d of [-6, 0, 6]) put(x + d, y - 6, 2, 8, '#77513c');
-    } else if (id === 'dam') {
-      put(x - 6, y - 3, 13, 4, '#a3b5c4'); put(x - 4, y - 6, 3, 3, '#5f6e8a'); put(x + 2, y - 5, 3, 2, '#5f6e8a'); put(x - 1, y - 1, 2, 2, '#4b86c9');
-    } else if (id === 'recycle') {
-      put(x - 4, y - 8, 9, 2, '#9bcb3e'); put(x + 3, y - 10, 2, 6, '#9bcb3e'); put(x - 4, y - 2, 9, 2, '#9bcb3e'); put(x - 4, y - 4, 2, 6, '#9bcb3e');
+    put(Math.round(x) - 6, Math.round(y) + 1, 13, 1, 'rgba(20,29,38,0.35)'); // contact shadow
+    const { x0, y0 } = gridSprite(ROBOT[id], x, y, put);
+    if (id === 'pump') { // an eight-blade rotor on the hub, turning
+      const hx = x0 + 6.5, hy = y0 + 0.5;
+      for (let i = 0; i < 8; i++) {
+        const a = g * 2.2 + i * Math.PI / 4;
+        for (let r = 2; r <= 6; r++) put(Math.floor(hx + Math.cos(a) * r), Math.floor(hy + Math.sin(a) * r), 1, 1, r >= 5 ? P.pale : P.cloud);
+      }
+      put(Math.floor(hx) - 1, Math.floor(hy) - 1, 3, 3, P.ink); put(Math.floor(hx), Math.floor(hy), 1, 1, P.clay);
+    } else if (id === 'sprinkler') { // water thrown in a turning arc
+      const hx = x0 + 5, hy = y0;
+      for (let i = 0; i < 7; i++) { const a = g * 3 + i * 0.9, r = 3 + ((g * 7 + i * 1.7) % 5); put(hx + Math.round(Math.cos(a) * r * 1.4), hy + Math.round(Math.sin(a) * r * 0.55) - 1, 1, 1, i % 2 ? P.mist : P.cloud); }
+    } else if (id === 'scrubber') { // smoke from the stack, drifting right as it rises
+      for (let i = 0; i < 4; i++) { const f = (g * 0.6 + i / 4) % 1, sx2 = x0 + 8 + Math.round(f * 5 + Math.sin((f + i) * 5)), sy = y0 - 1 - Math.round(f * 12), sz = f < 0.3 ? 2 : 3; put(sx2, sy, sz, sz - 1, f < 0.25 ? P.fire : f < 0.6 ? P.pale : P.snowsh); }
+      if (Math.floor(g * 8) % 2) put(x0 + 5, y0 + 9, 3, 1, P.flame);
+    } else if (id === 'dam') { // the river rushing through the breach
+      for (let i = 0; i < 6; i++) { const f = (g * 1.4 + i / 6) % 1; put(x0 + 4 + (i % 5), y0 + Math.round(f * 9), 1, 2, i % 2 ? P.sky : P.mist); }
+      put(x0 + 3, y0 + 6, 7, 2, P.sky); put(x0 + 4, y0 + 7, 5, 1, P.deep);
+    } else if (id === 'filter') { // clean water glinting in front of the reeds
+      if (Math.floor(g * 2) % 2) put(x0 + 3, y0 + 11, 2, 1, P.mist); else put(x0 + 10, y0 + 11, 2, 1, P.mist);
+    } else if (id === 'gate') { // the wheel turns a notch at a time
+      const k = Math.floor(g * 3) % 2; put(x0 + 4 + k * 2, y0 + 1 + k * 2, 1, 1, P.clay);
     }
   }
   function hexShape(color, edgeOnly) {
@@ -420,7 +543,7 @@
 
   // ---------- HUD ----------
   function $(id) { return document.getElementById(id); }
-  const iconOf = (id) => once(`ic${id}`, () => { const c = document.createElement('canvas'); c.width = 24; c.height = 26; const g = c.getContext('2d'); drawTool(id, 12, 23, 0.3, (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); }); return c.toDataURL(); });
+  const iconOf = (id) => once(`ic${id}`, () => { const c = document.createElement('canvas'); c.width = 26; c.height = 30; const g = c.getContext('2d'); drawTool(id, 13, 25, 0.3, (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); }); return c.toDataURL(); });
   $('tools').innerHTML = [...ORDER, 'recycle'].map((id, i) => {
     const k = TOOLS[id], tipText = k ? k.text : 'Take a restorer away and get half its leaves back. What it healed stays healed.';
     return `<button class="tool" data-tool="${id}" title="${tipText.replace(/"/g, '&quot;')}"><img alt="" src="${iconOf(id)}"><span>${k ? k.name : 'Recycle'}</span><em>${k ? `${k.cost} 🍃` : '+½'}</em>${i < ORDER.length ? `<kbd>${i + 1}</kbd>` : ''}</button>`;
@@ -432,6 +555,7 @@
     if (!m) { flash('Nothing you can afford changes any hex. Undo a few steps, or recycle a restorer you no longer need.'); return; }
     tool = m.id; hover = m.t; lastKey = ''; flash(`Try a ${lower(TOOLS[m.id].name)} on hex ${m.t.c},${m.t.r}: +${m.gain} for ${TOOLS[m.id].cost}.`);
   });
+  window.__hintPlace = () => { const m = moves()[0]; if (m) place(m.id, m.t); return !!m; }; // used by the screenshot and solver scripts
   let flashT = 0;
   function flash(m) { if (!m) return; $('msg').textContent = m; $('msg').hidden = false; flashT = now() + 5; }
   function updateHud() {
